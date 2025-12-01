@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { FaTachometerAlt, FaTractor, FaSeedling, FaBriefcase, FaMoneyBillWave, FaHandHoldingUsd, FaSignOutAlt, FaMoon, FaSun, FaReceipt, FaBuilding, FaTruck, FaChevronDown, FaChevronRight, FaPercent } from 'react-icons/fa';
+import { FaTachometerAlt, FaTractor, FaSeedling, FaBriefcase, FaMoneyBillWave, FaHandHoldingUsd, FaSignOutAlt, FaMoon, FaSun, FaReceipt, FaBuilding, FaTruck, FaChevronDown, FaChevronRight, FaPercent, FaBars, FaTimes } from 'react-icons/fa';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -14,6 +14,8 @@ const Layout = ({ children }) => {
     const saved = localStorage.getItem('expandedSections');
     return saved ? JSON.parse(saved) : { 0: true, 1: true, 2: true, 3: true };
   });
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -33,6 +35,10 @@ const Layout = ({ children }) => {
       ...prev,
       [index]: !prev[index]
     }));
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
   };
 
   const menuSections = [
@@ -71,7 +77,30 @@ const Layout = ({ children }) => {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      {/* Mobile Header */}
+      <div className="mobile-header">
+        <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
+        <div className="logo">
+          <div className="logo-icon">🚜</div>
+          <div className="logo-text">
+            <div className="logo-title">Munagala</div>
+          </div>
+        </div>
+        <button 
+          onClick={toggleTheme} 
+          className="theme-toggle"
+          style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '20px', cursor: 'pointer' }}
+        >
+          {theme === 'light' ? <FaMoon /> : <FaSun />}
+        </button>
+      </div>
+
+      {/* Mobile Overlay */}
+      <div className={`mobile-overlay ${mobileMenuOpen ? 'open' : ''}`} onClick={closeMobileMenu}></div>
+
+      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="logo">
@@ -114,6 +143,7 @@ const Layout = ({ children }) => {
                       <Link
                         to={item.path}
                         className={location.pathname === item.path ? 'active' : ''}
+                        onClick={closeMobileMenu}
                       >
                         {item.icon}
                         <span>{item.label}</span>

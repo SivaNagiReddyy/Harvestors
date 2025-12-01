@@ -53,6 +53,24 @@ code {
   min-height: 100vh;
 }
 
+/* Mobile Header (hidden on desktop) */
+.mobile-header {
+  display: none;
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.mobile-overlay {
+  display: none;
+}
+
 /* Sidebar */
 .sidebar {
   width: 250px;
@@ -2373,4 +2391,262 @@ tbody td {
   }
 }
 
+/* Mobile Responsive Styles */
+@media (max-width: 1024px) {
+  /* Show mobile header */
+  .mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+  }
+
+  .mobile-header .logo-icon {
+    font-size: 24px;
+  }
+
+  .mobile-header .logo-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Hide desktop header */
+  .top-header {
+    display: none;
+  }
+
+  /* Sidebar becomes hamburger menu */
+  .sidebar {
+    position: fixed;
+    left: -250px;
+    top: 0;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 0;
+  }
+
+  /* Mobile header */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+  }
+
+  .mobile-menu-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px;
+  }
+
+  .mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+  }
+
+  .mobile-overlay.open {
+    display: block;
+  }
+
+  /* Page adjustments */
+  .page-container {
+    padding: 15px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+  }
+
+  /* Table adjustments */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  /* Form adjustments */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: 95%;
+    margin: 20px auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
+  }
+
+  /* Button adjustments */
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-header .btn-primary {
+    width: auto;
+  }
+
+  /* Dashboard cards */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 15px;
+  }
+
+  .stat-card {
+    padding: 15px;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    width: 100%;
+  }
+
+  /* Action buttons in table */
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .action-buttons button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .stat-value {
+    font-size: 22px !important;
+  }
+
+  .stat-label {
+    font-size: 12px !important;
+  }
+
+  table {
+    font-size: 13px;
+  }
+
+  th, td {
+    padding: 10px 8px !important;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .modal-content {
+    padding: 15px;
+  }
+
+  .view-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .view-tabs button {
+    padding: 10px 16px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding: 10px;
+  }
+
+  .page-header h1 {
+    font-size: 18px;
+  }
+
+  .btn-primary svg,
+  .btn-secondary svg {
+    display: none;
+  }
+
+  table {
+    min-width: 500px;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .form-actions {
+    gap: 10px;
+  }
+
+  .action-buttons button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+}
 
