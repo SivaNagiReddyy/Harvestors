@@ -1,13 +1,26 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const supabase = require('./config/supabase');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    env: {
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_KEY,
+      hasJwtSecret: !!process.env.JWT_SECRET
+    }
+  });
+});
+
+const supabase = require('./config/supabase');
 
 // Test Supabase connection
 supabase.from('users').select('count').single()

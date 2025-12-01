@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const supabase = require('../config/supabase');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this_in_production';
+
 // Login
 router.post('/login', async (req, res) => {
   try {
@@ -26,7 +28,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user.id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
