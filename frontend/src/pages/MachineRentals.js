@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaTruck } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import '../index.css';
 
