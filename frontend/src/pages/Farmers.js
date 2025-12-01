@@ -28,6 +28,7 @@ const Farmers = () => {
   const [filterName, setFilterName] = useState('');
   const [filterVillage, setFilterVillage] = useState('');
   const [filterBalanceStatus, setFilterBalanceStatus] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchFarmers();
@@ -201,8 +202,6 @@ const Farmers = () => {
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
-
-  const [showFilters, setShowFilters] = useState(false);
 
   return (
     <div>
