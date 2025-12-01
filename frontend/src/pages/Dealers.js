@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaBuilding, FaFileExport } from 'react-icons/fa';
+import { FaPlus, FaBuilding, FaFileExport, FaEllipsisV, FaChevronDown, FaChevronUp, FaHome, FaPhone, FaEdit, FaTrash } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import '../index.css';
@@ -26,6 +26,8 @@ const Dealers = () => {
   // Filter states
   const [filterVillage, setFilterVillage] = useState('');
   const [filterBalanceStatus, setFilterBalanceStatus] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
 
   useEffect(() => {
     fetchDealers();
@@ -235,103 +237,390 @@ const Dealers = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
+      {/* Page Header with Actions */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '10px 0' }}>
         <div>
-          <h1>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FaBuilding /> Dealers
-          </h1>
-          <p className="page-subtitle">Manage dealer information and business relationships</p>
+          </h2>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredDealers, 'dealers'), 'dealers')}>
-            <FaFileExport /> Export
-          </button>
-          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+          <button 
+            className="btn btn-success" 
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: 'none',
+              background: '#28a745',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+          >
             <FaPlus /> Add Dealer
           </button>
+          <button
+            onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+            style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(100, 116, 139, 0.3)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              color: '#e2e8f0',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '16px'
+            }}
+          >
+            <FaEllipsisV />
+          </button>
+          {showOverflowMenu && (
+            <div style={{
+              position: 'absolute',
+              top: '45px',
+              right: '0',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              minWidth: '150px',
+              zIndex: 1000
+            }}>
+              <button
+                onClick={() => {
+                  exportToCSV(formatDataForExport(filteredDealers, 'dealers'), 'dealers');
+                  setShowOverflowMenu(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '14px',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(102, 126, 234, 0.2)'}
+                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+              >
+                <FaFileExport /> Export
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Filter Section */}
-      <FilterBar
-        filters={[
-          {
-            type: 'select',
-            label: 'Village',
-            value: filterVillage,
-            onChange: (e) => setFilterVillage(e.target.value),
-            options: [
-              { value: '', label: 'All Villages' },
-              ...uniqueVillages.map((village) => ({
-                value: village,
-                label: village
-              }))
-            ]
-          },
-          {
-            type: 'select',
-            label: 'Balance Status',
-            value: filterBalanceStatus,
-            onChange: (e) => setFilterBalanceStatus(e.target.value),
-            options: [
-              { value: '', label: 'All Balances' },
-              { value: 'Pending', label: 'Has Pending Amount' },
-              { value: 'Cleared', label: 'Fully Cleared' }
-            ]
-          }
-        ]}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        resultsText={`Showing ${filteredDealers.length} of ${dealers.length} dealers`}
-      />
-
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Village Name</th>
-              <th>Total Charged</th>
-              <th>Total Paid</th>
-              <th>Balance Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDealers.length === 0 ? (
-              <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
-                  No dealers found
-                </td>
-              </tr>
-            ) : (
-              filteredDealers.map((dealer) => {
-                const totalCharged = dealer.total_amount_charged || 0;
-                const totalPaid = dealer.total_amount_paid || 0;
-                const balance = dealer.balance_amount || 0;
-                return (
-                  <tr key={dealer.id}>
-                    <td><strong>{dealer.name}</strong></td>
-                    <td>{dealer.phone}</td>
-                    <td>{dealer.village_name || '-'}</td>
-                    <td className="amount">₹{totalCharged.toLocaleString()}</td>
-                    <td className="amount">₹{totalPaid.toLocaleString()}</td>
-                    <td className="amount" style={{ fontWeight: 'bold', color: balance > 0 ? '#e74c3c' : '#27ae60' }}>
-                      ₹{balance.toLocaleString()}
-                    </td>
-                    <td className="actions">
-                      <ActionsCell
-                        onEdit={() => handleEdit(dealer)}
-                        onDelete={() => handleDelete(dealer.id)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })
+      {/* Collapsible Filter Section */}
+      <div style={{ marginBottom: '16px' }}>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            background: 'rgba(30, 41, 59, 0.6)',
+            border: '1px solid rgba(100, 116, 139, 0.3)',
+            borderRadius: '12px',
+            color: '#e2e8f0',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '14px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.background = 'rgba(30, 41, 59, 0.8)'}
+          onMouseLeave={(e) => e.target.style.background = 'rgba(30, 41, 59, 0.6)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🔍 Filters
+            {hasActiveFilters && (
+              <span style={{
+                background: '#667eea',
+                color: 'white',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontSize: '11px',
+                fontWeight: '600'
+              }}>
+                Active
+              </span>
             )}
-          </tbody>
-        </table>
+          </div>
+          {showFilters ? <FaChevronUp /> : <FaChevronDown />}
+        </button>
+
+        {showFilters && (
+          <div style={{ 
+            background: 'rgba(30, 41, 59, 0.6)', 
+            padding: '16px', 
+            borderRadius: '12px', 
+            marginTop: '8px',
+            border: '1px solid rgba(100, 116, 139, 0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Showing {filteredDealers.length} of {dealers.length} dealers
+              </span>
+              {hasActiveFilters && (
+                <button 
+                  onClick={clearFilters}
+                  style={{
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
+                  <FaHome style={{ marginRight: '6px', fontSize: '12px' }} /> Village
+                </label>
+                <select
+                  value={filterVillage}
+                  onChange={(e) => setFilterVillage(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    color: '#e2e8f0',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">All Villages</option>
+                  {uniqueVillages.map((village) => (
+                    <option key={village} value={village}>
+                      {village}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
+                  💰 Balance Status
+                </label>
+                <select
+                  value={filterBalanceStatus}
+                  onChange={(e) => setFilterBalanceStatus(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(100, 116, 139, 0.3)',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    color: '#e2e8f0',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">All Balances</option>
+                  <option value="Pending">Has Pending Amount</option>
+                  <option value="Cleared">Fully Cleared</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Dealers List - Card Layout */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {filteredDealers.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '48px 20px',
+            background: 'rgba(51, 65, 85, 0.4)',
+            borderRadius: '12px',
+            border: '1px solid rgba(100, 116, 139, 0.3)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏢</div>
+            <div style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '500' }}>
+              No dealers found
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+              Add your first dealer to get started!
+            </div>
+          </div>
+        ) : (
+          filteredDealers.map((dealer) => {
+            const totalCharged = dealer.total_amount_charged || 0;
+            const totalPaid = dealer.total_amount_paid || 0;
+            const balance = dealer.balance_amount || 0;
+            return (
+              <div 
+                key={dealer.id}
+                style={{
+                  background: 'rgba(51, 65, 85, 0.4)',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(102, 126, 234, 0.15)';
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(51, 65, 85, 0.4)';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                {/* Header: Name and Village */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px' }}>
+                      {dealer.name}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
+                      <FaHome style={{ fontSize: '11px' }} />
+                      {dealer.village_name || '-'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <a 
+                  href={`tel:${dealer.phone}`}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    marginBottom: '12px',
+                    padding: '8px 10px',
+                    background: 'rgba(15, 23, 42, 0.5)',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    color: '#3b82f6',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.5)'}
+                >
+                  <FaPhone style={{ fontSize: '12px' }} />
+                  {dealer.phone}
+                </a>
+
+                {/* Financial Grid (3x2) */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(3, 1fr)', 
+                  gap: '10px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ 
+                    background: 'rgba(15, 23, 42, 0.5)', 
+                    padding: '10px', 
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Charged</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#3b82f6' }}>
+                      ₹{(totalCharged/1000).toFixed(1)}k
+                    </div>
+                  </div>
+                  <div style={{ 
+                    background: 'rgba(15, 23, 42, 0.5)', 
+                    padding: '10px', 
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Paid</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#10b981' }}>
+                      ₹{(totalPaid/1000).toFixed(1)}k
+                    </div>
+                  </div>
+                  <div style={{ 
+                    background: 'rgba(15, 23, 42, 0.5)', 
+                    padding: '10px', 
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Balance</div>
+                    <div style={{ 
+                      fontSize: '14px', 
+                      fontWeight: 'bold', 
+                      color: balance > 0 ? '#ef4444' : '#10b981' 
+                    }}>
+                      ₹{(balance/1000).toFixed(1)}k
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button 
+                    onClick={() => handleEdit(dealer)}
+                    style={{ 
+                      background: '#17a2b8', 
+                      color: 'white', 
+                      border: 'none', 
+                      padding: '8px 16px', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      fontSize: '13px', 
+                      fontWeight: '500',
+                      minHeight: '40px',
+                      transition: 'all 0.2s' 
+                    }} 
+                    onMouseEnter={(e) => e.target.style.background = '#138496'} 
+                    onMouseLeave={(e) => e.target.style.background = '#17a2b8'}
+                  >
+                    <FaEdit /> Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(dealer.id)}
+                    style={{ 
+                      background: '#dc3545', 
+                      color: 'white', 
+                      border: 'none', 
+                      padding: '8px 16px', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      fontSize: '13px', 
+                      fontWeight: '500',
+                      minHeight: '40px',
+                      transition: 'all 0.2s' 
+                    }} 
+                    onMouseEnter={(e) => e.target.style.background = '#c82333'} 
+                    onMouseLeave={(e) => e.target.style.background = '#dc3545'}
+                  >
+                    <FaTrash /> Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {isModalOpen && (
