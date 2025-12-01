@@ -1,4 +1,4 @@
-# Forgot Password Setup Guide
+# Forgot Password Setup Guide - PRODUCTION READY
 
 ## Overview
 The forgot password feature sends OTP (One-Time Password) to registered phone and email for password reset.
@@ -8,59 +8,62 @@ The forgot password feature sends OTP (One-Time Password) to registered phone an
 - **Email**: sivanagi318@gmail.com
 - **OTP Validity**: 10 minutes
 
-## Development Mode
-Currently running in **development mode** - notifications are logged to console only.
+## ✅ PRODUCTION READY
+The code is now configured to automatically send real SMS and Email when credentials are provided!
 
-## Production Setup
+## Quick Start - Enable Real Notifications
 
 ### 1. SMS Integration (Twilio)
 
-#### Install Twilio SDK:
-```bash
-cd backend
-npm install twilio
-```
+#### A. Create Twilio Account (FREE TRIAL):
+1. Go to https://www.twilio.com/try-twilio
+2. Sign up with your email
+3. Verify your phone number
+4. You'll get **FREE TRIAL CREDITS** ($15-20)
 
-#### Setup Twilio Account:
-1. Sign up at https://www.twilio.com
-2. Get your Account SID and Auth Token
-3. Get a Twilio phone number
+#### B. Get Twilio Credentials:
+1. Go to Twilio Console: https://console.twilio.com
+2. Copy **Account SID** and **Auth Token**
+3. Go to Phone Numbers → Get a trial number (FREE)
+4. Copy your Twilio phone number (format: +1234567890)
 
-#### Add Environment Variables:
-Add to your `.env` file or Vercel environment variables:
+#### C. Add to Vercel Environment Variables:
+1. Go to https://vercel.com/siva-nagi-reddy-munagalas-projects/munagala-harvestors-api
+2. Click **Settings** → **Environment Variables**
+3. Add these three variables:
 ```
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=+1234567890
+TWILIO_ACCOUNT_SID = your_account_sid_here
+TWILIO_AUTH_TOKEN = your_auth_token_here
+TWILIO_PHONE_NUMBER = +your_twilio_number
 ```
+4. Click **Save**
 
-#### Enable in Code:
-Edit `backend/utils/notifications.js` and uncomment the Twilio code block in the `sendSMS` function.
+**Note**: Trial accounts can only send to verified numbers. Add 9542477945 as a verified number in Twilio Console.
 
 ---
 
-### 2. Email Integration (NodeMailer with Gmail)
+### 2. Email Integration (Gmail - FREE)
 
-#### Install NodeMailer:
-```bash
-cd backend
-npm install nodemailer
+#### A. Generate Gmail App Password:
+1. Go to your Google Account: https://myaccount.google.com
+2. Click **Security** (left sidebar)
+3. Enable **2-Step Verification** (if not already enabled)
+4. Search for "App passwords" or go to: https://myaccount.google.com/apppasswords
+5. Select **App**: Mail
+6. Select **Device**: Other (Custom name) → Type "Harvester App"
+7. Click **Generate**
+8. Copy the **16-character password** (format: xxxx xxxx xxxx xxxx)
+
+#### B. Add to Vercel Environment Variables:
+1. Go to Vercel project settings
+2. Add these two variables:
 ```
-
-#### Setup Gmail App Password:
-1. Go to Google Account Settings
-2. Enable 2-Step Verification
-3. Generate App Password for "Mail"
-4. Copy the 16-character password
-
-#### Add Environment Variables:
+EMAIL_USER = sivanagi318@gmail.com
+EMAIL_PASSWORD = your_16_char_app_password (remove spaces)
 ```
-EMAIL_USER=sivanagi318@gmail.com
-EMAIL_PASSWORD=your_app_password_here
-```
+3. Click **Save**
 
-#### Enable in Code:
-Edit `backend/utils/notifications.js` and uncomment the NodeMailer code block in the `sendEmail` function.
+**Important**: Use the App Password, NOT your regular Gmail password!
 
 ---
 
@@ -119,13 +122,14 @@ curl -X POST http://localhost:5001/api/auth/reset-password \
 
 ---
 
-## Vercel Deployment
+## 🚀 Final Step: Redeploy
 
-### Add Environment Variables in Vercel:
-1. Go to your Vercel project
-2. Settings → Environment Variables
-3. Add all variables listed above
-4. Redeploy the application
+After adding environment variables in Vercel:
+1. Go to Deployments tab
+2. Click on the latest deployment → **Redeploy**
+3. Or push any commit to trigger auto-deployment
+
+The system will automatically detect the credentials and start sending real SMS/Email!
 
 ---
 
