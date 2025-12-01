@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+import api from '../api';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1); // 1: Request OTP, 2: Verify OTP, 3: Reset Password
@@ -22,7 +20,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { username });
+      const response = await api.post('/auth/forgot-password', { username });
       setSuccess(response.data.message);
       setStep(2);
     } catch (err) {
@@ -39,7 +37,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      await axios.post(`${API_URL}/api/auth/verify-otp`, { username, otp });
+      await api.post('/auth/verify-otp', { username, otp });
       setSuccess('OTP verified! Please set your new password.');
       setStep(3);
     } catch (err) {
@@ -67,7 +65,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      await axios.post(`${API_URL}/api/auth/reset-password`, {
+      await api.post('/auth/reset-password', {
         username,
         otp,
         newPassword
