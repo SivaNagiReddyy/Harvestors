@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { jobAPI } from '../api';
-import { FaPercent, FaPlus } from 'react-icons/fa';
+import { FaPercent, FaPlus, FaFileExport } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Discounts = () => {
   const [jobs, setJobs] = useState([]);
@@ -181,10 +182,15 @@ const Discounts = () => {
           <h1><FaPercent /> Discount Management</h1>
           <p>Manage discounts from owners and to farmers</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAddNew}>
-          <FaPlus style={{ marginRight: '8px' }} />
-          Add Discount
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(jobs, 'discounts'), 'discounts')}>
+            <FaFileExport /> Export
+          </button>
+          <button className="btn btn-primary" onClick={handleAddNew}>
+            <FaPlus style={{ marginRight: '8px' }} />
+            Add Discount
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -378,7 +384,7 @@ const Discounts = () => {
                             <option value="">-- Select a Job --</option>
                             {jobs.map((job, idx) => (
                               <option key={job.id} value={job.id}>
-                                Job #{idx + 1} - {job.farmers?.name || 'N/A'} - {job.machines?.driver_name || 'N/A'}/{job.machines?.machine_owners?.name || 'N/A'} - {new Date(job.work_date || job.scheduled_date).toLocaleDateString()}
+                                {job.farmers?.name || 'N/A'} ({job.farmers?.village || 'N/A'}) - Driver: {job.machines?.driver_name || 'N/A'} - Owner: {job.machines?.machine_owners?.name || 'N/A'} - {new Date(job.work_date || job.scheduled_date).toLocaleDateString()}
                               </option>
                             ))}
                           </select>

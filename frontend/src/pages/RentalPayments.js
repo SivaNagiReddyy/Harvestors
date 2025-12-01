@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaMoneyBillWave } from 'react-icons/fa';
+import { FaPlus, FaMoneyBillWave, FaFileExport } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import '../index.css';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const RentalPayments = () => {
   const [payments, setPayments] = useState([]);
@@ -189,9 +190,14 @@ const RentalPayments = () => {
           </h1>
           <p className="page-subtitle">Track payments received from dealers for machine rentals</p>
         </div>
-        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-          <FaPlus /> Record Payment
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredPayments, 'rentalPayments'), 'rental_payments')}>
+            <FaFileExport /> Export
+          </button>
+          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            <FaPlus /> Record Payment
+          </button>
+        </div>
       </div>
 
       {/* Filter Section */}

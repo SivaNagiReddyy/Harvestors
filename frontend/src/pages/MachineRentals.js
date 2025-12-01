@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaTruck } from 'react-icons/fa';
+import { FaPlus, FaTruck, FaFileExport } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import '../index.css';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const MachineRentals = () => {
   const [rentals, setRentals] = useState([]);
@@ -186,9 +187,14 @@ const MachineRentals = () => {
           </h1>
           <p className="page-subtitle">Manage seasonal machine rental agreements with dealers</p>
         </div>
-        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-          <FaPlus /> New Rental Agreement
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredRentals, 'rentals'), 'machine_rentals')}>
+            <FaFileExport /> Export
+          </button>
+          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            <FaPlus /> New Rental Agreement
+          </button>
+        </div>
       </div>
 
       <div className="filter-bar">

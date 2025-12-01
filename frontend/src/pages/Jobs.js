@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { jobAPI, farmerAPI, machineAPI } from '../api';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaFileExport, FaTimes, FaTractor, FaUserAlt, FaHome, FaClock, FaEdit, FaTrash, FaCalendarAlt } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -26,6 +27,7 @@ const Jobs = () => {
   const [filterMachine, setFilterMachine] = useState('');
   const [filterFarmer, setFilterFarmer] = useState('');
   const [filterVillage, setFilterVillage] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   useEffect(() => {
     fetchJobs();
@@ -141,6 +143,7 @@ const Jobs = () => {
   const filteredJobs = jobs.filter(job => {
     if (filterMachine && job.machine_id !== filterMachine) return false;
     if (filterFarmer && job.farmer_id !== filterFarmer) return false;
+    if (filterStatus && job.status !== filterStatus) return false;
     
     // Filter by village through farmer
     if (filterVillage) {
@@ -155,9 +158,10 @@ const Jobs = () => {
     setFilterMachine('');
     setFilterFarmer('');
     setFilterVillage('');
+    setFilterStatus('');
   };
 
-  const hasActiveFilters = filterMachine || filterFarmer || filterVillage;
+  const hasActiveFilters = filterMachine || filterFarmer || filterVillage || filterStatus;
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -165,80 +169,282 @@ const Jobs = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Harvesting Jobs</h2>
-        <p>Manage and track harvesting assignments</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <div>
+          <h2>Harvesting Jobs</h2>
+          <p>Manage and track harvesting assignments</p>
+        </div>
+        
+        {/* Total Hours Summary - Top Right */}
+        {filteredJobs.length > 0 && (() => {
+          const totalMinutes = filteredJobs.reduce((sum, job) => {
+            const hours = parseFloat(job.hours || 0);
+            return sum + (hours * 60);
+          }, 0);
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = Math.round(totalMinutes % 60);
+          return (
+            <div style={{ 
+              padding: '20px 28px', 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+              color: 'white',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
+              minWidth: '240px',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
+            }}
+            >
+              <FaClock style={{ fontSize: '36px', opacity: 0.9 }} />
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '13px', opacity: 0.9, marginBottom: '4px', fontWeight: '500', letterSpacing: '0.5px' }}>
+                  Total Working Hours
+                </div>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '-1px', lineHeight: '1' }}>
+                  {hours}h {minutes}m
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.95, marginTop: '6px', fontWeight: '500' }}>
+                  From {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Filter Section */}
-      <FilterBar
-        filters={[
-          {
-            type: 'select',
-            label: 'Machine',
-            value: filterMachine,
-            onChange: (e) => setFilterMachine(e.target.value),
-            options: [
-              { value: '', label: 'All Machines' },
-              ...machines.map((machine) => ({
-                value: machine.id,
-                label: `${machine.machine_type} - ${machine.machine_number}`
-              }))
-            ]
-          },
-          {
-            type: 'select',
-            label: 'Farmer',
-            value: filterFarmer,
-            onChange: (e) => setFilterFarmer(e.target.value),
-            options: [
-              { value: '', label: 'All Farmers' },
-              ...farmers.map((farmer) => ({
-                value: farmer.id,
-                label: `${farmer.name} - ${farmer.village}`
-              }))
-            ]
-          },
-          {
-            type: 'select',
-            label: 'Village',
-            value: filterVillage,
-            onChange: (e) => setFilterVillage(e.target.value),
-            options: [
-              { value: '', label: 'All Villages' },
-              ...uniqueVillages.map((village) => ({
-                value: village,
-                label: village
-              }))
-            ]
-          }
-        ]}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        resultsText={`Showing ${filteredJobs.length} of ${jobs.length} jobs`}
-      />
-
-      <div className="table-container">
-        <div className="table-header">
-          <h3>Harvesting Records</h3>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            <FaPlus /> Add Job
-          </button>
+      {/* Filter Section with Icons */}
+      <div style={{ 
+        background: 'rgba(30, 41, 59, 0.6)', 
+        padding: '20px', 
+        borderRadius: '12px', 
+        marginBottom: '30px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        border: '1px solid rgba(100, 116, 139, 0.2)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#e2e8f0' }}>
+            🔍 Filter Jobs
+          </h4>
+          {hasActiveFilters && (
+            <button 
+              onClick={clearFilters}
+              style={{
+                background: '#dc3545',
+                color: 'white',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.background = '#c82333'}
+              onMouseOut={(e) => e.target.style.background = '#dc3545'}
+            >
+              <FaTimes /> Reset Filters
+            </button>
+          )}
         </div>
-        <table>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+          {/* Machine Filter */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '14px', fontWeight: '500', color: '#cbd5e1' }}>
+              <FaTractor style={{ color: '#667eea' }} /> Machine
+            </label>
+            <select 
+              value={filterMachine}
+              onChange={(e) => setFilterMachine(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
+                background: 'rgba(15, 23, 42, 0.6)',
+                color: '#e2e8f0',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">All Machines</option>
+              {machines.map((machine) => (
+                <option key={machine.id} value={machine.id}>
+                  {machine.machine_type} - {machine.machine_number}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Farmer Filter */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '14px', fontWeight: '500', color: '#cbd5e1' }}>
+              <FaUserAlt style={{ color: '#28a745' }} /> Farmer
+            </label>
+            <select 
+              value={filterFarmer}
+              onChange={(e) => setFilterFarmer(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
+                background: 'rgba(15, 23, 42, 0.6)',
+                color: '#e2e8f0',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">All Farmers</option>
+              {farmers.map((farmer) => (
+                <option key={farmer.id} value={farmer.id}>
+                  {farmer.name} - {farmer.village}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Village Filter */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '14px', fontWeight: '500', color: '#cbd5e1' }}>
+              <FaHome style={{ color: '#fd7e14' }} /> Village
+            </label>
+            <select 
+              value={filterVillage}
+              onChange={(e) => setFilterVillage(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
+                background: 'rgba(15, 23, 42, 0.6)',
+                color: '#e2e8f0',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">All Villages</option>
+              {uniqueVillages.map((village) => (
+                <option key={village} value={village}>
+                  {village}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '14px', fontWeight: '500', color: '#cbd5e1' }}>
+              <span style={{ fontSize: '16px' }}>📊</span> Status
+            </label>
+            <select 
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
+                background: 'rgba(15, 23, 42, 0.6)',
+                color: '#e2e8f0',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">All Status</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending Payment">Pending Payment</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ marginTop: '12px', fontSize: '14px', color: '#94a3b8' }}>
+          Showing {filteredJobs.length} of {jobs.length} jobs
+        </div>
+      </div>
+
+      <div className="table-container" style={{ 
+        marginTop: '30px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        background: 'rgba(30, 41, 59, 0.6)',
+        border: '1px solid rgba(100, 116, 139, 0.2)'
+      }}>
+        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>📋 Harvesting Records</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => exportToCSV(formatDataForExport(filteredJobs, 'jobs'), 'harvesting_jobs')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }}
+            >
+              <FaFileExport /> Export
+            </button>
+            <button 
+              className="btn btn-success" 
+              onClick={() => setShowModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }}
+            >
+              <FaPlus /> Add Job
+            </button>
+          </div>
+        </div>
+        <table style={{ width: '100%' }}>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Farmer</th>
-              <th>Machine</th>
-              <th>Driver</th>
-              <th>Hours</th>
-              <th>Rate/Hour</th>
-              <th>Total</th>
-              <th>Advance</th>
-              <th>Net Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>
+                <FaCalendarAlt style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />
+                Date
+              </th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Farmer</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Machine</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Driver</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>
+                <FaClock style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />
+                Hours
+              </th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Rate/Hour</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Total</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Advance</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Net Amount</th>
+              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Status</th>
+              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -247,37 +453,153 @@ const Jobs = () => {
                 const totalAmount = (job.hours || 0) * (job.rate_per_hour || 0);
                 const advanceFromFarmer = job.advance_from_farmer || 0;
                 const netAmount = totalAmount - advanceFromFarmer;
+                
+                // Get status color
+                const getStatusStyle = (status) => {
+                  const statusLower = status?.toLowerCase() || '';
+                  if (statusLower === 'completed') return { bg: '#d4edda', color: '#155724', border: '#c3e6cb' };
+                  if (statusLower === 'scheduled') return { bg: '#d1ecf1', color: '#0c5460', border: '#bee5eb' };
+                  if (statusLower.includes('pending')) return { bg: '#fff3cd', color: '#856404', border: '#ffeaa7' };
+                  return { bg: '#f8f9fa', color: '#495057', border: '#dee2e6' };
+                };
+                
+                const statusStyle = getStatusStyle(job.status);
+                
                 return (
-                <tr key={job.id}>
-                  <td>{new Date(job.scheduled_date || job.work_date).toLocaleDateString()}</td>
-                  <td>{job.farmers?.name || job.farmer?.name || 'N/A'}</td>
-                  <td>{job.machines?.machine_type || job.machine?.machine_type || 'N/A'} - {job.machines?.machine_number || job.machine?.machine_number || 'N/A'}</td>
-                  <td>{job.machines?.driver_name || job.machine?.driver_name || 'N/A'}</td>
-                  <td>{job.hours || 0}</td>
-                  <td>₹{job.rate_per_hour || 0}</td>
-                  <td>₹{totalAmount.toLocaleString()}</td>
-                  <td style={{ color: advanceFromFarmer > 0 ? '#ef4444' : 'inherit' }}>
-                    {advanceFromFarmer > 0 ? `-₹${advanceFromFarmer.toLocaleString()}` : '-'}
+                <tr key={job.id} style={{ 
+                  transition: 'background-color 0.2s',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid rgba(100, 116, 139, 0.2)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaCalendarAlt style={{ fontSize: '12px', color: '#6c757d' }} />
+                      {new Date(job.scheduled_date || job.work_date).toLocaleDateString()}
+                    </div>
                   </td>
-                  <td style={{ fontWeight: 'bold', color: '#10b981' }}>₹{netAmount.toLocaleString()}</td>
-                  <td>
-                    <span className={`status-badge ${job.status.toLowerCase().replace(' ', '-')}`}>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        borderRadius: '50%', 
+                        background: '#28a745',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        {(job.farmers?.name || job.farmer?.name || 'N').charAt(0).toUpperCase()}
+                      </span>
+                      <span>{job.farmers?.name || job.farmer?.name || 'N/A'}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaTractor style={{ fontSize: '14px', color: '#667eea' }} />
+                      <span>{job.machines?.machine_type || job.machine?.machine_type || 'N/A'} - {job.machines?.machine_number || job.machine?.machine_number || 'N/A'}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '50%', 
+                        background: '#667eea',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold'
+                      }}>
+                        {(job.machines?.driver_name || job.machine?.driver_name || 'D').charAt(0).toUpperCase()}
+                      </span>
+                      <span>{job.machines?.driver_name || job.machine?.driver_name || 'N/A'}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '500' }}>{job.hours || 0}h</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right' }}>{(job.rate_per_hour || 0).toLocaleString()}</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '600' }}>{totalAmount.toLocaleString()}</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', color: advanceFromFarmer > 0 ? '#dc3545' : '#6c757d' }}>
+                    {advanceFromFarmer > 0 ? advanceFromFarmer.toLocaleString() : '-'}
+                  </td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 'bold', color: '#28a745', fontSize: '15px' }}>
+                    {netAmount.toLocaleString()}
+                  </td>
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <span style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: statusStyle.bg,
+                      color: statusStyle.color,
+                      border: `1px solid ${statusStyle.border}`,
+                      display: 'inline-block'
+                    }}>
                       {job.status}
                     </span>
                   </td>
-                  <td>
-                    <ActionsCell
-                      onEdit={() => handleEdit(job)}
-                      onDelete={() => handleDelete(job.id)}
-                    />
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button
+                        onClick={() => handleEdit(job)}
+                        style={{
+                          background: '#17a2b8',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#138496'}
+                        onMouseLeave={(e) => e.target.style.background = '#17a2b8'}
+                        title="Edit Job"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(job.id)}
+                        style={{
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#c82333'}
+                        onMouseLeave={(e) => e.target.style.background = '#dc3545'}
+                        title="Delete Job"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan="11" style={{ textAlign: 'center', padding: '40px' }}>
-                  {hasActiveFilters ? 'No jobs match the selected filters.' : 'No jobs found. Add your first harvesting job!'}
+                <td colSpan="11" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px' }}>
+                  {hasActiveFilters ? '🔍 No jobs match the selected filters.' : '📋 No jobs found. Add your first harvesting job!'}
                 </td>
               </tr>
             )}

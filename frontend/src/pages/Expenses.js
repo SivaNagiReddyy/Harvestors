@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaFileExport, FaEdit, FaTrash, FaCalendarAlt, FaTractor } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import axios from 'axios';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
@@ -25,7 +26,7 @@ const Expenses = () => {
   const fetchExpenses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/expenses', {
+      const response = await axios.get('/expenses', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExpenses(response.data);
@@ -39,7 +40,7 @@ const Expenses = () => {
   const fetchMachines = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/machines', {
+      const response = await axios.get('/machines', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMachines(response.data);
@@ -53,11 +54,11 @@ const Expenses = () => {
     try {
       const token = localStorage.getItem('token');
       if (editingExpense) {
-        await axios.put(`/api/expenses/${editingExpense.id}`, formData, {
+        await axios.put(`/expenses/${editingExpense.id}`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('/api/expenses', formData, {
+        await axios.post('/expenses', formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -84,7 +85,7 @@ const Expenses = () => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`/api/expenses/${id}`, {
+        await axios.delete(`/expenses/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchExpenses();
@@ -138,9 +139,14 @@ const Expenses = () => {
     <div className="page-container">
       <div className="page-header">
         <h2>Daily Expenses</h2>
-        <button className="btn btn-success" onClick={() => setShowModal(true)}>
-          <FaPlus /> Add Expense
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredExpenses, 'expenses'), 'daily_expenses')}>
+            <FaFileExport /> Export
+          </button>
+          <button className="btn btn-success" onClick={() => setShowModal(true)}>
+            <FaPlus /> Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards - Updated to show filtered data */}
@@ -290,31 +296,41 @@ const Expenses = () => {
             )}
           </div>
         </div>
-        <table className="data-table">
+        <table className="data-table" style={{ width: '100%' }}>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Machine</th>
-              <th>Driver</th>
-              <th>Amount</th>
-              <th>Notes</th>
-              <th>Actions</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaCalendarAlt style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Date</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaTractor style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Machine</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Driver</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Amount</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Notes</th>
+              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredExpenses.length > 0 ? (
               filteredExpenses.map((expense) => (
-                <tr key={expense.id}>
-                  <td>{new Date(expense.expense_date).toLocaleDateString()}</td>
-                  <td>{expense.machines?.machine_type || 'N/A'} - {expense.machines?.machine_number || 'N/A'}</td>
-                  <td>{expense.machines?.driver_name || 'N/A'}</td>
-                  <td style={{ fontWeight: 'bold', color: '#f59e0b' }}>₹{parseFloat(expense.amount).toLocaleString()}</td>
-                  <td>{expense.notes || '-'}</td>
-                  <td>
-                    <ActionsCell
-                      onEdit={() => handleEdit(expense)}
-                      onDelete={() => handleDelete(expense.id)}
-                    />
+                <tr key={expense.id} style={{ transition: 'background-color 0.2s', cursor: 'pointer', borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaCalendarAlt style={{ fontSize: '12px', color: '#6c757d' }} />
+                      {new Date(expense.expense_date).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaTractor style={{ fontSize: '14px', color: '#667eea' }} />
+                      {expense.machines?.machine_type || 'N/A'} - {expense.machines?.machine_number || 'N/A'}
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px' }}>{expense.machines?.driver_name || 'N/A'}</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 'bold', color: '#f59e0b', fontSize: '15px' }}>{parseFloat(expense.amount).toLocaleString()}</td>
+                  <td style={{ padding: '14px 16px' }}>{expense.notes || '-'}</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button onClick={() => handleEdit(expense)} style={{ background: '#17a2b8', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#138496'} onMouseLeave={(e) => e.target.style.background = '#17a2b8'} title="Edit Expense"><FaEdit /></button>
+                      <button onClick={() => handleDelete(expense.id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#c82333'} onMouseLeave={(e) => e.target.style.background = '#dc3545'} title="Delete Expense"><FaTrash /></button>
+                    </div>
                   </td>
                 </tr>
               ))

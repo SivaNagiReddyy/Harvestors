@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { machineAPI, machineOwnerAPI } from '../api';
-import { FaPlus, FaTrash, FaCog } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCog, FaFileExport, FaEdit, FaTractor, FaPhone, FaUserTie } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import axios from 'axios';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Machines = () => {
   const [machines, setMachines] = useState([]);
@@ -65,7 +66,7 @@ const Machines = () => {
   const fetchExpenses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/expenses', {
+      const response = await axios.get('/expenses', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('💸 Expenses fetched:', response.data);
@@ -78,7 +79,7 @@ const Machines = () => {
   const fetchJobs = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/jobs', {
+      const response = await axios.get('/jobs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('📋 Jobs fetched:', response.data);
@@ -91,7 +92,7 @@ const Machines = () => {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/payments', {
+      const response = await axios.get('/payments', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('💰 Payments fetched:', response.data);
@@ -104,7 +105,7 @@ const Machines = () => {
   const fetchRentals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/rentals', {
+      const response = await axios.get('/rentals', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRentals(response.data);
@@ -270,14 +271,19 @@ const Machines = () => {
         resultsText={`Showing ${filteredMachines.length} of ${machines.length} machines`}
       />
 
-      <div className="table-container">
-        <div className="table-header">
-          <h3>Machine Details</h3>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            <FaPlus /> Add Machine
-          </button>
+      <div className="table-container" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.3)', borderRadius: '12px', overflow: 'hidden', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 116, 139, 0.2)' }}>
+        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>🚜 Machine Details</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredMachines, 'machines'), 'machines')} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
+              <FaFileExport /> Export
+            </button>
+            <button className="btn btn-success" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
+              <FaPlus /> Add Machine
+            </button>
+          </div>
         </div>
-        <div style={{ padding: '10px 0', fontSize: '13px', color: '#6b7280' }}>
+        <div style={{ padding: '12px 20px', fontSize: '13px', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.4)', borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
           <strong>Note:</strong> Earnings shown include <strong>both Direct Harvesting Jobs and Dealer Rentals</strong>.
         </div>
         <table>

@@ -12,7 +12,7 @@ if [ ! -d "node_modules" ]; then
 fi
 
 echo "✅ Frontend running on http://localhost:3000"
-echo "🔗 API: http://localhost:5000"
+echo "🔗 API: http://localhost:5001"
 echo "👤 Login: admin / Krish@143"
 echo ""
 

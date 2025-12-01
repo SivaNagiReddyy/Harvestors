@@ -1123,6 +1123,15 @@ tbody td {
   border-top: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+tbody tr {
+  transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(102, 126, 234, 0.04);
 }
 
 .status-badge {

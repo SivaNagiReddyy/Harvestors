@@ -11,7 +11,7 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-echo "✅ Backend running on http://localhost:5000"
+echo "✅ Backend running on http://localhost:5001"
 echo "📊 Database: Supabase (Production)"
 echo "🔐 Auth: JWT"
 echo ""

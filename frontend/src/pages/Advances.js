@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { advanceAPI, machineAPI } from '../api';
-import { FaPlus, FaMoneyBillWave } from 'react-icons/fa';
+import { FaPlus, FaMoneyBillWave, FaFileExport } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Advances = () => {
   const [advances, setAdvances] = useState([]);
@@ -217,9 +218,14 @@ const Advances = () => {
       <div className="table-container">
         <div className="table-header">
           <h3>Advance Records</h3>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            <FaPlus /> Add Advance
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredAdvances, 'advances'), 'advances')}>
+              <FaFileExport /> Export
+            </button>
+            <button className="btn btn-success" onClick={() => setShowModal(true)}>
+              <FaPlus /> Add Advance
+            </button>
+          </div>
         </div>
         <table>
           <thead>

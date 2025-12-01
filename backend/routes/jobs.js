@@ -210,150 +210,28 @@ router.post('/', auth, async (req, res) => {
 // Update job
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { farmer, machine, workDate, hours, ratePerHour, advanceFromFarmer, expensesGiven, totalAmount, status, notes, discountFromOwner, discountToFarmer } = req.body;
-    
-    // Get the old job data first to calculate the difference
-    const { data: oldJob, error: oldJobError } = await supabase
-      .from('harvesting_jobs')
-      .select('*, machines(owner_rate_per_hour, machine_owner_id)')
-      .eq('id', req.params.id)
-      .single();
-    
-    if (oldJobError) throw oldJobError;
-    if (!oldJob) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
-    
-    // Calculate net amounts if discounts or amounts changed
-    let netOwnerAmount, netFarmerAmount;
-    let grossOwnerAmount;
-    
-    if (hours && machine) {
-      const { data: machineData } = await supabase
-        .from('machines')
-        .select('owner_rate_per_hour')
-        .eq('id', machine_id)
-        .single();
-      
-      grossOwnerAmount = parseFloat(hours) * parseFloat(machineData.owner_rate_per_hour || 0);
-      const ownerDiscount = parseFloat(discountFromOwner) || 0;
-      netOwnerAmount = grossOwnerAmount - ownerDiscount;
-    } else {
-      // Use existing values if not updating hours/machine
-      grossOwnerAmount = parseFloat(oldJob.hours || 0) * parseFloat(oldJob.machines?.owner_rate_per_hour || 0);
-      const ownerDiscount = discountFromOwner !== undefined ? parseFloat(discountFromOwner) || 0 : parseFloat(oldJob.discount_from_owner) || 0;
-      netOwnerAmount = grossOwnerAmount - ownerDiscount;
-    }
-    
-    if (totalAmount) {
-      const farmerDiscount = parseFloat(discountToFarmer) || 0;
-      netFarmerAmount = parseFloat(totalAmount) - farmerDiscount;
-    } else {
-      // Use existing values if not updating totalAmount
-      let grossFarmerAmount = parseFloat(oldJob.total_amount || 0);
-      
-      // If total_amount is 0 or missing, calculate from hours * rate_per_hour
-      if (grossFarmerAmount === 0) {
-        const jobHours = hours || parseFloat(oldJob.hours || 0);
-        const jobRate = ratePerHour || parseFloat(oldJob.rate_per_hour || 0);
-        grossFarmerAmount = jobHours * jobRate;
-      }
-      
-      const farmerDiscount = discountToFarmer !== undefined ? parseFloat(discountToFarmer) || 0 : parseFloat(oldJob.discount_to_farmer) || 0;
-      netFarmerAmount = grossFarmerAmount - farmerDiscount;
-    }
+    const { farmer, machine, workDate, hours, ratePerHour, advanceFromFarmer, status, notes } = req.body;
     
     const updateData = {
       ...(farmer && { farmer_id: farmer }),
       ...(machine && { machine_id: machine }),
       ...(workDate && { scheduled_date: workDate }),
-      ...(hours && { hours: hours }),
-      ...(ratePerHour && { rate_per_hour: ratePerHour }),
+      ...(hours !== undefined && { hours: parseFloat(hours) }),
+      ...(ratePerHour !== undefined && { rate_per_hour: parseFloat(ratePerHour) }),
       ...(advanceFromFarmer !== undefined && { advance_from_farmer: parseFloat(advanceFromFarmer) || 0 }),
-      ...(expensesGiven !== undefined && { expenses_given: parseFloat(expensesGiven) || 0 }),
-      ...(totalAmount && { total_amount: totalAmount }),
-      ...(discountFromOwner !== undefined && { discount_from_owner: parseFloat(discountFromOwner) || 0 }),
-      ...(discountToFarmer !== undefined && { discount_to_farmer: parseFloat(discountToFarmer) || 0 }),
-      net_amount_to_owner: netOwnerAmount,
-      net_amount_from_farmer: netFarmerAmount,
-      ...(status && { status: status }),
-      notes: notes || null
+      ...(status && { status }),
+      ...(notes !== undefined && { notes: notes || null })
     };
-
+    
     const { data: job, error } = await supabase
       .from('harvesting_jobs')
       .update(updateData)
       .eq('id', req.params.id)
-      .select(`
-        *,
-        farmers(*),
-        machines(*, machine_owners(*))
-      `)
+      .select('*')
       .single();
-
+    
     if (error) throw error;
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
-
-    // Update pending amounts if discounts changed
-    const oldNetOwnerAmount = parseFloat(oldJob.net_amount_to_owner) || grossOwnerAmount;
-    const oldNetFarmerAmount = parseFloat(oldJob.net_amount_from_farmer) || parseFloat(oldJob.total_amount);
     
-    const ownerDifference = netOwnerAmount - oldNetOwnerAmount;
-    const farmerDifference = netFarmerAmount - oldNetFarmerAmount;
-    
-    console.log('Discount update - Owner difference:', ownerDifference, 'Farmer difference:', farmerDifference);
-    
-    // Update machine pending amount
-    if (ownerDifference !== 0 && oldJob.machine_id) {
-      const { data: machineData } = await supabase
-        .from('machines')
-        .select('total_amount_pending, machine_owner_id')
-        .eq('id', oldJob.machine_id)
-        .single();
-      
-      if (machineData) {
-        const newMachinePending = (machineData.total_amount_pending || 0) + ownerDifference;
-        await supabase
-          .from('machines')
-          .update({ total_amount_pending: Math.max(0, newMachinePending) })
-          .eq('id', oldJob.machine_id);
-        
-        // Update machine owner pending amount
-        const { data: ownerData } = await supabase
-          .from('machine_owners')
-          .select('total_amount_pending')
-          .eq('id', machineData.machine_owner_id)
-          .single();
-        
-        if (ownerData) {
-          const newOwnerPending = (ownerData.total_amount_pending || 0) + ownerDifference;
-          await supabase
-            .from('machine_owners')
-            .update({ total_amount_pending: Math.max(0, newOwnerPending) })
-            .eq('id', machineData.machine_owner_id);
-        }
-      }
-    }
-    
-    // Update farmer pending amount
-    if (farmerDifference !== 0 && oldJob.farmer_id) {
-      const { data: farmerData } = await supabase
-        .from('farmers')
-        .select('total_amount_pending')
-        .eq('id', oldJob.farmer_id)
-        .single();
-      
-      if (farmerData) {
-        const newFarmerPending = (farmerData.total_amount_pending || 0) + farmerDifference;
-        await supabase
-          .from('farmers')
-          .update({ total_amount_pending: Math.max(0, newFarmerPending) })
-          .eq('id', oldJob.farmer_id);
-      }
-    }
-
     res.json(job);
   } catch (error) {
     res.status(500).json({ error: error.message });

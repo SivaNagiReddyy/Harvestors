@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { paymentAPI, jobAPI, machineOwnerAPI, farmerAPI, machineAPI } from '../api';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaFileExport, FaTractor, FaEdit, FaTrash, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import axios from 'axios';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Payments = () => {
   const [payments, setPayments] = useState([]);
@@ -138,7 +139,7 @@ const Payments = () => {
   const fetchExpenses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/expenses', {
+      const response = await axios.get('/expenses', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExpenses(response.data);
@@ -151,7 +152,7 @@ const Payments = () => {
   const fetchRentals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/rentals', {
+      const response = await axios.get('/rentals', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRentals(response.data);
@@ -325,52 +326,167 @@ const Payments = () => {
         totalText={hasActiveFilters ? `Total: ₹${totalFiltered.toLocaleString()}` : null}
       />
 
-      <div className="table-container">
-        <div className="table-header">
-          <h3>All Payments</h3>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            <FaPlus /> Add Payment
-          </button>
+      <div className="table-container" style={{ 
+        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        background: 'rgba(30, 41, 59, 0.6)',
+        border: '1px solid rgba(100, 116, 139, 0.2)'
+      }}>
+        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>💰 All Payments</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => exportToCSV(formatDataForExport(filteredPayments, 'payments'), 'payments')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }}
+            >
+              <FaFileExport /> Export
+            </button>
+            <button 
+              className="btn btn-success" 
+              onClick={() => setShowModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s'
+              }}
+            >
+              <FaPlus /> Add Payment
+            </button>
+          </div>
         </div>
-        <table>
+        <table style={{ width: '100%' }}>
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Party</th>
-              <th>Amount</th>
-              <th>Payment Method</th>
-              <th>Payment Date</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Type</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Party</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>
+                <FaDollarSign style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />
+                Amount
+              </th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Payment Method</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}>
+                <FaCalendarAlt style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />
+                Payment Date
+              </th>
+              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Status</th>
+              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredPayments.length > 0 ? (
               filteredPayments.map((payment) => (
-                <tr key={payment.id}>
-                  <td>
-                    <span className={`status-badge ${payment.type === 'To Machine Owner' ? 'danger' : 'success'}`}>
+                <tr key={payment.id} style={{ 
+                  transition: 'background-color 0.2s',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid rgba(100, 116, 139, 0.2)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <td style={{ padding: '14px 16px' }}>
+                    <span style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: payment.type === 'To Machine Owner' ? '#fee2e2' : '#d4edda',
+                      color: payment.type === 'To Machine Owner' ? '#991b1b' : '#155724',
+                      border: `1px solid ${payment.type === 'To Machine Owner' ? '#fecaca' : '#c3e6cb'}`,
+                      display: 'inline-block'
+                    }}>
                       {payment.type}
                     </span>
                   </td>
-                  <td>
+                  <td style={{ padding: '14px 16px' }}>
                     {payment.type === 'To Machine Owner'
                       ? payment.machine_owner?.name
                       : payment.farmer?.name}
                   </td>
-                  <td>₹{payment.amount?.toLocaleString()}</td>
-                  <td>{payment.payment_method}</td>
-                  <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
-                  <td>
-                    <span className={`status-badge ${payment.status?.toLowerCase()}`}>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '600', fontSize: '15px', color: payment.type === 'To Machine Owner' ? '#dc3545' : '#28a745' }}>
+                    {payment.amount?.toLocaleString()}
+                  </td>
+                  <td style={{ padding: '14px 16px' }}>{payment.payment_method}</td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaCalendarAlt style={{ fontSize: '12px', color: '#6c757d' }} />
+                      {new Date(payment.payment_date).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <span style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      backgroundColor: payment.status?.toLowerCase() === 'paid' ? '#d4edda' : '#fff3cd',
+                      color: payment.status?.toLowerCase() === 'paid' ? '#155724' : '#856404',
+                      border: `1px solid ${payment.status?.toLowerCase() === 'paid' ? '#c3e6cb' : '#ffeaa7'}`,
+                      display: 'inline-block'
+                    }}>
                       {payment.status}
                     </span>
                   </td>
-                  <td>
-                    <ActionsCell
-                      onEdit={() => handleEdit(payment)}
-                      onDelete={() => handleDelete(payment.id)}
-                    />
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button
+                        onClick={() => handleEdit(payment)}
+                        style={{
+                          background: '#17a2b8',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#138496'}
+                        onMouseLeave={(e) => e.target.style.background = '#17a2b8'}
+                        title="Edit Payment"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(payment.id)}
+                        style={{
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = '#c82333'}
+                        onMouseLeave={(e) => e.target.style.background = '#dc3545'}
+                        title="Delete Payment"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { machineOwnerAPI } from '../api';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaFileExport } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import axios from 'axios';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const MachineOwners = () => {
   const [owners, setOwners] = useState([]);
@@ -45,7 +46,7 @@ const MachineOwners = () => {
   const fetchExpenses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/expenses', {
+      const response = await axios.get('/expenses', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExpenses(response.data);
@@ -57,7 +58,7 @@ const MachineOwners = () => {
   const fetchJobs = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/jobs', {
+      const response = await axios.get('/jobs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Jobs loaded:', response.data.length);
@@ -76,7 +77,7 @@ const MachineOwners = () => {
   const fetchRentals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/rentals', {
+      const response = await axios.get('/rentals', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRentals(response.data || []);
@@ -168,9 +169,14 @@ const MachineOwners = () => {
       <div className="table-container">
         <div className="table-header">
           <h3>Owners</h3>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            <FaPlus /> Add Machine Owner
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(owners, 'machineOwners'), 'machine_owners')}>
+              <FaFileExport /> Export
+            </button>
+            <button className="btn btn-success" onClick={() => setShowModal(true)}>
+              <FaPlus /> Add Machine Owner
+            </button>
+          </div>
         </div>
         <table>
           <thead>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { farmerAPI } from '../api';
-import { FaPlus, FaTrash, FaCog } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCog, FaFileExport, FaEdit, FaUserAlt, FaHome, FaPhone } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import axios from 'axios';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Farmers = () => {
   const [farmers, setFarmers] = useState([]);
@@ -48,7 +49,7 @@ const Farmers = () => {
   const fetchJobs = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/jobs', {
+      const response = await axios.get('/jobs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setJobs(response.data);
@@ -60,7 +61,7 @@ const Farmers = () => {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/payments', {
+      const response = await axios.get('/payments', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPayments(response.data);
@@ -272,24 +273,35 @@ const Farmers = () => {
         resultsText={`Showing ${filteredFarmers.length} of ${farmers.length} farmers`}
       />
 
-      <div className="table-container">
-        <div className="table-header">
-          <h3>Farmers List</h3>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            <FaPlus /> Add Farmer
-          </button>
+      <div className="table-container" style={{ 
+        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        background: 'rgba(30, 41, 59, 0.6)',
+        border: '1px solid rgba(100, 116, 139, 0.2)'
+      }}>
+        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>👨‍🌾 Farmers List</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredFarmers, 'farmers'), 'farmers')} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
+              <FaFileExport /> Export
+            </button>
+            <button className="btn btn-success" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
+              <FaPlus /> Add Farmer
+            </button>
+          </div>
         </div>
-        <table>
+        <table style={{ width: '100%' }}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Village</th>
-              <th>Total Amount</th>
-              <th>Discounts Received</th>
-              <th>Paid Amount</th>
-              <th>Balance</th>
-              <th>Actions</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaUserAlt style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Name</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaPhone style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Phone</th>
+              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaHome style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Village</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Total Amount</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Discounts Received</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Paid Amount</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Balance</th>
+              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -327,24 +339,24 @@ const Farmers = () => {
                   .reduce((sum, job) => sum + parseFloat(job.discount_to_farmer || 0), 0);
                 
                 return (
-                  <tr key={farmer.id}>
-                    <td>{farmer.name}</td>
-                    <td>{farmer.phone}</td>
-                    <td>{farmer.village}</td>
-                    <td>₹{totalAmount.toLocaleString()}</td>
-                    <td style={{ 
-                      fontWeight: totalDiscountsReceived > 0 ? 'bold' : 'normal',
-                      color: totalDiscountsReceived > 0 ? '#10b981' : '#6b7280'
-                    }}>
-                      ₹{totalDiscountsReceived.toLocaleString()}
+                  <tr key={farmer.id} style={{ transition: 'background-color 0.2s', cursor: 'pointer', borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#28a745', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>{farmer.name.charAt(0).toUpperCase()}</span>
+                        <span>{farmer.name}</span>
+                      </div>
                     </td>
-                    <td>₹{paidAmount.toLocaleString()}</td>
-                    <td style={{ fontWeight: 'bold', color: balance > 0 ? '#ef4444' : '#10b981' }}>₹{balance.toLocaleString()}</td>
-                    <td>
-                      <ActionsCell
-                        onEdit={() => handleEdit(farmer)}
-                        onDelete={() => handleDelete(farmer.id)}
-                      />
+                    <td style={{ padding: '14px 16px' }}><FaPhone style={{ marginRight: '6px', fontSize: '11px', opacity: 0.6 }} />{farmer.phone}</td>
+                    <td style={{ padding: '14px 16px' }}><FaHome style={{ marginRight: '6px', fontSize: '11px', opacity: 0.6 }} />{farmer.village}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '500' }}>{totalAmount.toLocaleString()}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: totalDiscountsReceived > 0 ? 'bold' : 'normal', color: totalDiscountsReceived > 0 ? '#10b981' : '#6b7280' }}>{totalDiscountsReceived.toLocaleString()}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'right' }}>{paidAmount.toLocaleString()}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 'bold', color: balance > 0 ? '#ef4444' : '#10b981', fontSize: '15px' }}>{balance.toLocaleString()}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button onClick={() => handleEdit(farmer)} style={{ background: '#17a2b8', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#138496'} onMouseLeave={(e) => e.target.style.background = '#17a2b8'} title="Edit Farmer"><FaEdit /></button>
+                        <button onClick={() => handleDelete(farmer.id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#c82333'} onMouseLeave={(e) => e.target.style.background = '#dc3545'} title="Delete Farmer"><FaTrash /></button>
+                      </div>
                     </td>
                   </tr>
                 );

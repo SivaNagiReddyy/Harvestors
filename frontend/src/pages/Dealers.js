@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaBuilding } from 'react-icons/fa';
+import { FaPlus, FaBuilding, FaFileExport } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import '../index.css';
+import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Dealers = () => {
   const [dealers, setDealers] = useState([]);
@@ -241,9 +242,14 @@ const Dealers = () => {
           </h1>
           <p className="page-subtitle">Manage dealer information and business relationships</p>
         </div>
-        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-          <FaPlus /> Add Dealer
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredDealers, 'dealers'), 'dealers')}>
+            <FaFileExport /> Export
+          </button>
+          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            <FaPlus /> Add Dealer
+          </button>
+        </div>
       </div>
 
       {/* Filter Section */}
