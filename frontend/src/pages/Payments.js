@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { paymentAPI, jobAPI, machineOwnerAPI, farmerAPI, machineAPI } from '../api';
-import { FaPlus, FaFileExport, FaTractor, FaEdit, FaTrash, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
+import { FaPlus, FaFileExport, FaTractor, FaEdit, FaTrash, FaCalendarAlt, FaDollarSign, FaEllipsisV, FaChevronDown, FaChevronUp, FaUser, FaUserTie } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import axios from 'axios';
@@ -33,6 +33,8 @@ const Payments = () => {
 
   // Filter states
   const [filterMachine, setFilterMachine] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -297,208 +299,364 @@ const Payments = () => {
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h2>Payments</h2>
-        <p>Manage payments to machine owners and from farmers</p>
+    <div className="page-container">
+      {/* Page Header with Actions */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '10px 0' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Payments</h2>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+          <button 
+            className="btn btn-success" 
+            onClick={() => setShowModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: 'none',
+              background: '#28a745',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+          >
+            <FaPlus /> Add Payment
+          </button>
+          <button
+            onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+            style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(100, 116, 139, 0.3)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              color: '#e2e8f0',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '16px'
+            }}
+          >
+            <FaEllipsisV />
+          </button>
+          {showOverflowMenu && (
+            <div style={{
+              position: 'absolute',
+              top: '45px',
+              right: '0',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              minWidth: '150px',
+              zIndex: 1000
+            }}>
+              <button
+                onClick={() => {
+                  exportToCSV(formatDataForExport(filteredPayments, 'payments'), 'payments');
+                  setShowOverflowMenu(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '14px',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(102, 126, 234, 0.2)'}
+                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+              >
+                <FaFileExport /> Export
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Filter Section */}
-      <FilterBar
-        filters={[
-          {
-            type: 'select',
-            label: 'Machine',
-            value: filterMachine,
-            onChange: (e) => setFilterMachine(e.target.value),
-            options: [
-              { value: '', label: 'All Machines' },
-              ...machines.map((machine) => ({
-                value: machine.id,
-                label: `${machine.machine_number} - ${machine.driver_name}`
-              }))
-            ]
-          }
-        ]}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        resultsText={`Showing ${filteredPayments.length} of ${payments.length} payments`}
-        totalText={hasActiveFilters ? `Total: ₹${totalFiltered.toLocaleString()}` : null}
-      />
-
-      <div className="table-container" style={{ 
-        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        background: 'rgba(30, 41, 59, 0.6)',
-        border: '1px solid rgba(100, 116, 139, 0.2)'
-      }}>
-        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>💰 All Payments</h3>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => exportToCSV(formatDataForExport(filteredPayments, 'payments'), 'payments')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 16px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              <FaFileExport /> Export
-            </button>
-            <button 
-              className="btn btn-success" 
-              onClick={() => setShowModal(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 16px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              <FaPlus /> Add Payment
-            </button>
+      {/* Collapsible Filter Section */}
+      <div style={{ marginBottom: '16px' }}>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            background: 'rgba(30, 41, 59, 0.6)',
+            border: '1px solid rgba(100, 116, 139, 0.3)',
+            borderRadius: '12px',
+            color: '#e2e8f0',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '14px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.background = 'rgba(30, 41, 59, 0.8)'}
+          onMouseLeave={(e) => e.target.style.background = 'rgba(30, 41, 59, 0.6)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🔍 Filters
+            {hasActiveFilters && (
+              <span style={{
+                background: '#667eea',
+                color: 'white',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontSize: '11px',
+                fontWeight: '600'
+              }}>
+                Active
+              </span>
+            )}
           </div>
-        </div>
-        <table style={{ width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Type</th>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Party</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right' }}>
-                <FaDollarSign style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />
-                Amount
-              </th>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}>Payment Method</th>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}>
-                <FaCalendarAlt style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />
-                Payment Date
-              </th>
-              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Status</th>
-              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredPayments.length > 0 ? (
-              filteredPayments.map((payment) => (
-                <tr key={payment.id} style={{ 
-                  transition: 'background-color 0.2s',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid rgba(100, 116, 139, 0.2)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          {showFilters ? <FaChevronUp /> : <FaChevronDown />}
+        </button>
+
+        {showFilters && (
+          <div style={{ 
+            background: 'rgba(30, 41, 59, 0.6)', 
+            padding: '16px', 
+            borderRadius: '12px', 
+            marginTop: '8px',
+            border: '1px solid rgba(100, 116, 139, 0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Showing {filteredPayments.length} of {payments.length} payments
+                {hasActiveFilters && <span style={{ color: '#667eea', fontWeight: '600', marginLeft: '8px' }}>
+                  (₹{totalFiltered.toLocaleString()})
+                </span>}
+              </span>
+              {hasActiveFilters && (
+                <button 
+                  onClick={clearFilters}
+                  style={{
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
                 >
-                  <td style={{ padding: '14px 16px' }}>
-                    <span style={{
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      backgroundColor: payment.type === 'To Machine Owner' ? '#fee2e2' : '#d4edda',
-                      color: payment.type === 'To Machine Owner' ? '#991b1b' : '#155724',
-                      border: `1px solid ${payment.type === 'To Machine Owner' ? '#fecaca' : '#c3e6cb'}`,
-                      display: 'inline-block'
-                    }}>
-                      {payment.type}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 16px' }}>
+                  Clear All
+                </button>
+              )}
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
+                <FaTractor style={{ marginRight: '6px', fontSize: '12px' }} /> Machine
+              </label>
+              <select
+                value={filterMachine}
+                onChange={(e) => setFilterMachine(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  color: '#e2e8f0',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="">All Machines</option>
+                {machines.map((machine) => (
+                  <option key={machine.id} value={machine.id}>
+                    {machine.machine_number} - {machine.driver_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Payments List - Card Layout */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {filteredPayments.length > 0 ? (
+          filteredPayments.map((payment) => (
+            <div 
+              key={payment.id}
+              style={{
+                background: 'rgba(51, 65, 85, 0.4)',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
+                borderRadius: '12px',
+                padding: '14px',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(102, 126, 234, 0.15)';
+                e.currentTarget.style.transform = 'translateX(4px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(51, 65, 85, 0.4)';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
+            >
+              {/* Header: Type Badge and Amount */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <span style={{
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  backgroundColor: payment.type === 'To Machine Owner' ? '#fee2e2' : '#d4edda',
+                  color: payment.type === 'To Machine Owner' ? '#991b1b' : '#155724',
+                  border: `1px solid ${payment.type === 'To Machine Owner' ? '#fecaca' : '#c3e6cb'}`,
+                  display: 'inline-block'
+                }}>
+                  {payment.type}
+                </span>
+                <div style={{ 
+                  fontSize: '20px', 
+                  fontWeight: 'bold', 
+                  color: payment.type === 'To Machine Owner' ? '#dc3545' : '#28a745',
+                  textAlign: 'right'
+                }}>
+                  ₹{payment.amount?.toLocaleString()}
+                </div>
+              </div>
+
+              {/* Party Info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: payment.type === 'To Machine Owner' 
+                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                    : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: 'white'
+                }}>
+                  {payment.type === 'To Machine Owner' 
+                    ? <FaUserTie /> 
+                    : <FaUser />
+                  }
+                </div>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#e2e8f0' }}>
                     {payment.type === 'To Machine Owner'
                       ? payment.machine_owner?.name
                       : payment.farmer?.name}
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '600', fontSize: '15px', color: payment.type === 'To Machine Owner' ? '#dc3545' : '#28a745' }}>
-                    {payment.amount?.toLocaleString()}
-                  </td>
-                  <td style={{ padding: '14px 16px' }}>{payment.payment_method}</td>
-                  <td style={{ padding: '14px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FaCalendarAlt style={{ fontSize: '12px', color: '#6c757d' }} />
-                      {new Date(payment.payment_date).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                    <span style={{
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      backgroundColor: payment.status?.toLowerCase() === 'paid' ? '#d4edda' : '#fff3cd',
-                      color: payment.status?.toLowerCase() === 'paid' ? '#155724' : '#856404',
-                      border: `1px solid ${payment.status?.toLowerCase() === 'paid' ? '#c3e6cb' : '#ffeaa7'}`,
-                      display: 'inline-block'
-                    }}>
-                      {payment.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button
-                        onClick={() => handleEdit(payment)}
-                        style={{
-                          background: '#17a2b8',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '13px',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.background = '#138496'}
-                        onMouseLeave={(e) => e.target.style.background = '#17a2b8'}
-                        title="Edit Payment"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(payment.id)}
-                        style={{
-                          background: '#dc3545',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '13px',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.background = '#c82333'}
-                        onMouseLeave={(e) => e.target.style.background = '#dc3545'}
-                        title="Delete Payment"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
-                  {hasActiveFilters ? 'No payments match the selected filters.' : 'No payments found. Record your first payment!'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {payment.payment_method}
+                  </div>
+                </div>
+              </div>
+
+              {/* Date and Status Row */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '12px',
+                padding: '8px 10px',
+                background: 'rgba(15, 23, 42, 0.5)',
+                borderRadius: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#cbd5e1' }}>
+                  <FaCalendarAlt style={{ fontSize: '12px', color: '#94a3b8' }} />
+                  {new Date(payment.payment_date).toLocaleDateString()}
+                </div>
+                <span style={{
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  backgroundColor: payment.status?.toLowerCase() === 'paid' ? '#d4edda' : '#fff3cd',
+                  color: payment.status?.toLowerCase() === 'paid' ? '#155724' : '#856404',
+                  border: `1px solid ${payment.status?.toLowerCase() === 'paid' ? '#c3e6cb' : '#ffeaa7'}`
+                }}>
+                  {payment.status}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button 
+                  onClick={() => handleEdit(payment)}
+                  style={{ 
+                    background: '#17a2b8', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '8px 16px', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    fontSize: '13px', 
+                    fontWeight: '500',
+                    minHeight: '40px',
+                    transition: 'all 0.2s' 
+                  }} 
+                  onMouseEnter={(e) => e.target.style.background = '#138496'} 
+                  onMouseLeave={(e) => e.target.style.background = '#17a2b8'}
+                >
+                  <FaEdit /> Edit
+                </button>
+                <button 
+                  onClick={() => handleDelete(payment.id)}
+                  style={{ 
+                    background: '#dc3545', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '8px 16px', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    fontSize: '13px', 
+                    fontWeight: '500',
+                    minHeight: '40px',
+                    transition: 'all 0.2s' 
+                  }} 
+                  onMouseEnter={(e) => e.target.style.background = '#c82333'} 
+                  onMouseLeave={(e) => e.target.style.background = '#dc3545'}
+                >
+                  <FaTrash /> Delete
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '48px 20px',
+            background: 'rgba(51, 65, 85, 0.4)',
+            borderRadius: '12px',
+            border: '1px solid rgba(100, 116, 139, 0.3)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>💰</div>
+            <div style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '500' }}>
+              {hasActiveFilters ? 'No payments match the selected filters.' : 'No payments found.'}
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+              Record your first payment!
+            </div>
+          </div>
+        )}
       </div>
 
       {showModal && (
