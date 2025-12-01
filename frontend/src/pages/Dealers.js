@@ -5,8 +5,6 @@ import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import '../index.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-
 const Dealers = () => {
   const [dealers, setDealers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,7 +34,7 @@ const Dealers = () => {
   const fetchDealers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/dealers`, {
+      const response = await axios.get(`/dealers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDealers(response.data);
@@ -49,7 +47,7 @@ const Dealers = () => {
     try {
       const token = localStorage.getItem('token');
       // Get unique villages from dealers
-      const response = await axios.get(`${API_URL}/dealers`, {
+      const response = await axios.get(`/dealers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const uniqueVillages = [...new Set(response.data.map(d => d.village_name).filter(Boolean))];
@@ -148,11 +146,11 @@ const Dealers = () => {
     try {
       const token = localStorage.getItem('token');
       if (editingDealer) {
-        await axios.put(`${API_URL}/dealers/${editingDealer.id}`, formData, {
+        await axios.put(`/dealers/${editingDealer.id}`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post(`${API_URL}/dealers`, formData, {
+        await axios.post(`/dealers`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -180,7 +178,7 @@ const Dealers = () => {
     if (window.confirm('Are you sure you want to delete this dealer?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`${API_URL}/dealers/${id}`, {
+        await axios.delete(`/dealers/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchDealers();

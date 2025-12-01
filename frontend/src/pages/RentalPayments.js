@@ -5,8 +5,6 @@ import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import '../index.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-
 const RentalPayments = () => {
   const [payments, setPayments] = useState([]);
   const [rentals, setRentals] = useState([]);
@@ -36,7 +34,7 @@ const RentalPayments = () => {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/rental-payments`, {
+      const response = await axios.get(`/rental-payments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPayments(response.data);
@@ -48,7 +46,7 @@ const RentalPayments = () => {
   const fetchRentals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/rentals`, {
+      const response = await axios.get(`${/rentals`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRentals(response.data.filter(r => r.status === 'Active' || r.status === 'Completed'));
@@ -60,7 +58,7 @@ const RentalPayments = () => {
   const fetchDealers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/dealers`, {
+      const response = await axios.get(`/dealers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDealers(response.data);
@@ -101,11 +99,11 @@ const RentalPayments = () => {
       };
 
       if (editingPayment) {
-        await axios.put(`${API_URL}/rental-payments/${editingPayment.id}`, submitData, {
+        await axios.put(`/rental-payments/${editingPayment.id}`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post(`${API_URL}/rental-payments`, submitData, {
+        await axios.post(`/rental-payments`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -135,7 +133,7 @@ const RentalPayments = () => {
     if (window.confirm('Are you sure you want to delete this payment?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`${API_URL}/rental-payments/${id}`, {
+        await axios.delete(`/rental-payments/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchPayments();
