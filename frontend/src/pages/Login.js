@@ -54,6 +54,21 @@ const Login = () => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <div style={{ marginTop: '15px', textAlign: 'center' }}>
+          <button 
+            onClick={() => navigate('/forgot-password')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#667eea',
+              cursor: 'pointer',
+              fontSize: '14px',
+              textDecoration: 'underline'
+            }}
+          >
+            Forgot Password?
+          </button>
+        </div>
         <p style={{ marginTop: '20px', fontSize: '12px', color: '#64748b', textAlign: 'center' }}>
           Default credentials: admin / admin123
         </p>
