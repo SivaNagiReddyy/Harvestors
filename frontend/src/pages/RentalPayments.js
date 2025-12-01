@@ -46,7 +46,7 @@ const RentalPayments = () => {
   const fetchRentals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${/rentals`, {
+      const response = await axios.get('/rentals', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRentals(response.data.filter(r => r.status === 'Active' || r.status === 'Completed'));

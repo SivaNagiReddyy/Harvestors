@@ -33,7 +33,7 @@ const MachineRentals = () => {
   const fetchRentals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${/rentals`, {
+      const response = await axios.get('/rentals', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRentals(response.data);
@@ -57,7 +57,7 @@ const MachineRentals = () => {
   const fetchMachines = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/machines`, {
+      const response = await axios.get('/machines', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMachines(response.data);
@@ -106,11 +106,11 @@ const MachineRentals = () => {
       };
 
       if (editingRental) {
-        await axios.put(`${/rentals/${editingRental.id}`, submitData, {
+        await axios.put(`/rentals/${editingRental.id}`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post(`${/rentals`, submitData, {
+        await axios.post('/rentals', submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -141,7 +141,7 @@ const MachineRentals = () => {
     if (window.confirm('Are you sure you want to delete this rental?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`${/rentals/${id}`, {
+        await axios.delete(`/rentals/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchRentals();
