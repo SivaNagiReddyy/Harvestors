@@ -10,15 +10,6 @@ const Dashboard = () => {
   const [selectedMachine, setSelectedMachine] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  useEffect(() => {
-    fetchMachines();
-    fetchStats();
-  }, [fetchStats]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [selectedMachine]);
-
   const fetchMachines = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -45,6 +36,11 @@ const Dashboard = () => {
       setLoading(false);
     }
   }, [selectedMachine]);
+
+  useEffect(() => {
+    fetchMachines();
+    fetchStats();
+  }, [fetchStats]);
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
