@@ -202,128 +202,256 @@ const Farmers = () => {
     return <div className="loading">Loading...</div>;
   }
 
+  const [showFilters, setShowFilters] = useState(false);
+
   return (
     <div>
-      <div className="page-header">
-        <h2>Farmers</h2>
-        <p>Manage farmers and their information</p>
+      {/* Page Header with Add Button */}
+      <div className="page-header" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        padding: '16px 20px',
+        marginBottom: '12px'
+      }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '22px' }}>Farmers</h2>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13px' }}>Manage farmers and their information</p>
+        </div>
+        <button 
+          className="btn btn-success" 
+          onClick={() => setShowModal(true)}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px', 
+            padding: '10px 16px',
+            fontSize: '14px',
+            borderRadius: '8px',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <FaPlus /> Add
+        </button>
       </div>
 
-      {/* Job Statistics - Compact for Mobile */}
-      <div className="stats-grid" style={{ 
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
+      {/* Horizontal Scrolling Stats Bar */}
+      <div style={{ 
+        display: 'flex',
         gap: '12px',
-        margin: '0 20px 16px 20px'
-      }}>
-        <div className="stat-card success" style={{
-          padding: '12px',
-          borderLeft: '3px solid #22c55e'
+        overflowX: 'auto',
+        padding: '0 20px 16px 20px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}
+      className="hide-scrollbar">
+        <div style={{
+          minWidth: '140px',
+          padding: '16px',
+          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          borderRadius: '12px',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
         }}>
-          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Farmers</h3>
-          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{farmers.length || 0}</div>
-          <small style={{ fontSize: '11px' }}>Total registered</small>
+          <div style={{ fontSize: '13px', opacity: 0.9, marginBottom: '8px' }}>👨‍🌾 Farmers</div>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', lineHeight: '1' }}>{farmers.length || 0}</div>
         </div>
-        <div className="stat-card warning" style={{
-          padding: '12px',
-          borderLeft: '3px solid #f59e0b'
+        <div style={{
+          minWidth: '140px',
+          padding: '16px',
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          borderRadius: '12px',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
         }}>
-          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Total Jobs</h3>
-          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{jobs.length || 0}</div>
-          <small style={{ fontSize: '11px' }}>All jobs</small>
+          <div style={{ fontSize: '13px', opacity: 0.9, marginBottom: '8px' }}>📋 Total Jobs</div>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', lineHeight: '1' }}>{jobs.length || 0}</div>
         </div>
-        <div className="stat-card success" style={{
-          padding: '12px',
-          borderLeft: '3px solid #22c55e'
+        <div style={{
+          minWidth: '140px',
+          padding: '16px',
+          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          borderRadius: '12px',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
         }}>
-          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Completed</h3>
-          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{jobs.filter(j => j.status === 'Completed').length || 0}</div>
-          <small style={{ fontSize: '11px' }}>Done</small>
+          <div style={{ fontSize: '13px', opacity: 0.9, marginBottom: '8px' }}>✅ Completed</div>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', lineHeight: '1' }}>{jobs.filter(j => j.status === 'Completed').length || 0}</div>
         </div>
-        <div className="stat-card warning" style={{
-          padding: '12px',
-          borderLeft: '3px solid #f59e0b'
+        <div style={{
+          minWidth: '140px',
+          padding: '16px',
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          borderRadius: '12px',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
         }}>
-          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Pending</h3>
-          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{jobs.filter(j => j.status !== 'Completed').length || 0}</div>
-          <small style={{ fontSize: '11px' }}>In progress</small>
+          <div style={{ fontSize: '13px', opacity: 0.9, marginBottom: '8px' }}>⏳ Pending</div>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', lineHeight: '1' }}>{jobs.filter(j => j.status !== 'Completed').length || 0}</div>
         </div>
       </div>
 
-      {/* Filter Section */}
-      <FilterBar
-        filters={[
-          {
-            type: 'text',
-            label: 'Farmer Name',
-            value: filterName,
-            onChange: (e) => setFilterName(e.target.value),
-            placeholder: 'Search by name...'
-          },
-          {
-            type: 'select',
-            label: 'Village',
-            value: filterVillage,
-            onChange: (e) => setFilterVillage(e.target.value),
-            options: [
-              { value: '', label: 'All Villages' },
-              ...uniqueVillages.map((village) => ({
-                value: village,
-                label: village
-              }))
-            ]
-          },
-          {
-            type: 'select',
-            label: 'Balance Status',
-            value: filterBalanceStatus,
-            onChange: (e) => setFilterBalanceStatus(e.target.value),
-            options: [
-              { value: '', label: 'All Balances' },
-              { value: 'Pending', label: 'Has Pending Amount' },
-              { value: 'Paid', label: 'Fully Paid' }
-            ]
-          }
-        ]}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        resultsText={`Showing ${filteredFarmers.length} of ${farmers.length} farmers`}
-      />
-
-      <div className="table-container" style={{ 
-        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        background: 'rgba(30, 41, 59, 0.6)',
-        border: '1px solid rgba(100, 116, 139, 0.2)'
-      }}>
-        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>👨‍🌾 Farmers List</h3>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredFarmers, 'farmers'), 'farmers')} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
-              <FaFileExport /> Export
-            </button>
-            <button className="btn btn-success" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
-              <FaPlus /> Add Farmer
-            </button>
+      {/* Collapsible Filters Accordion */}
+      <div style={{ margin: '0 20px 16px 20px' }}>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '14px 16px',
+            background: 'rgba(30, 41, 59, 0.6)',
+            border: '1px solid rgba(100, 116, 139, 0.3)',
+            borderRadius: '10px',
+            color: '#e2e8f0',
+            fontSize: '15px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🔍 Filters {hasActiveFilters && <span style={{ 
+              background: '#ef4444', 
+              color: 'white', 
+              padding: '2px 8px', 
+              borderRadius: '12px', 
+              fontSize: '11px' 
+            }}>Active</span>}
+          </span>
+          <span style={{ fontSize: '12px' }}>{showFilters ? '▲' : '▼'}</span>
+        </button>
+        
+        {showFilters && (
+          <div style={{
+            marginTop: '12px',
+            padding: '16px',
+            background: 'rgba(30, 41, 59, 0.4)',
+            border: '1px solid rgba(100, 116, 139, 0.2)',
+            borderRadius: '10px'
+          }}>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#94a3b8' }}>
+                Farmer Name
+              </label>
+              <input
+                type="text"
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Search by name..."
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderRadius: '8px',
+                  color: '#e2e8f0',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#94a3b8' }}>
+                Village
+              </label>
+              <select
+                value={filterVillage}
+                onChange={(e) => setFilterVillage(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderRadius: '8px',
+                  color: '#e2e8f0',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">All Villages</option>
+                {uniqueVillages.map((village) => (
+                  <option key={village} value={village}>{village}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#94a3b8' }}>
+                Balance Status
+              </label>
+              <select
+                value={filterBalanceStatus}
+                onChange={(e) => setFilterBalanceStatus(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderRadius: '8px',
+                  color: '#e2e8f0',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">All Balances</option>
+                <option value="Pending">Has Pending Amount</option>
+                <option value="Paid">Fully Paid</option>
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  background: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Clear All Filters
+              </button>
+            )}
+            <div style={{ marginTop: '12px', fontSize: '13px', color: '#64748b', textAlign: 'center' }}>
+              Showing {filteredFarmers.length} of {farmers.length} farmers
+            </div>
           </div>
-        </div>
-        <table style={{ width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaUserAlt style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Name</th>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaPhone style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Phone</th>
-              <th style={{ padding: '14px 16px', textAlign: 'left' }}><FaHome style={{ marginRight: '6px', fontSize: '12px', opacity: 0.7 }} />Village</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Total Amount</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Discounts Received</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Paid Amount</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right' }}>Balance</th>
-              <th style={{ padding: '14px 16px', textAlign: 'center' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredFarmers.length > 0 ? (
-              filteredFarmers.map((farmer) => {
+        )}
+      </div>
+
+      {/* Farmers List Header */}
+      <div style={{ 
+        padding: '0 20px 12px 20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '600', color: '#e2e8f0' }}>
+          👨‍🌾 Farmers List
+        </h3>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => exportToCSV(formatDataForExport(filteredFarmers, 'farmers'), 'farmers')} 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px', 
+            padding: '8px 14px',
+            fontSize: '13px',
+            borderRadius: '8px'
+          }}
+        >
+          <FaFileExport /> Export
+        </button>
+      </div>
+
+      {/* Card-Style Farmers List */}
+      <div style={{ padding: '0 20px 20px 20px' }}>
+        {filteredFarmers.length > 0 ? (
+          filteredFarmers.map((farmer) => {
                 // Calculate total amount from jobs for this farmer
                 const totalAmount = jobs
                   .filter(job => job.farmer_id === farmer.id)
@@ -356,37 +484,159 @@ const Farmers = () => {
                   .reduce((sum, job) => sum + parseFloat(job.discount_to_farmer || 0), 0);
                 
                 return (
-                  <tr key={farmer.id} style={{ transition: 'background-color 0.2s', cursor: 'pointer', borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#28a745', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>{farmer.name.charAt(0).toUpperCase()}</span>
-                        <span>{farmer.name}</span>
+                  <div 
+                    key={farmer.id}
+                    style={{
+                      background: 'rgba(30, 41, 59, 0.6)',
+                      border: '1px solid rgba(100, 116, 139, 0.3)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      marginBottom: '12px',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                        <span style={{ 
+                          width: '48px', 
+                          height: '48px', 
+                          borderRadius: '50%', 
+                          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', 
+                          color: 'white', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '20px', 
+                          fontWeight: 'bold',
+                          flexShrink: 0
+                        }}>
+                          {farmer.name.charAt(0).toUpperCase()}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '17px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px' }}>
+                            {farmer.name}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#94a3b8' }}>
+                              <FaPhone style={{ fontSize: '12px' }} />
+                              <a href={`tel:${farmer.phone}`} style={{ color: '#60a5fa', textDecoration: 'none' }}>
+                                {farmer.phone}
+                              </a>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#94a3b8' }}>
+                              <FaHome style={{ fontSize: '12px' }} />
+                              <span>{farmer.village}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                    <td style={{ padding: '14px 16px' }}><FaPhone style={{ marginRight: '6px', fontSize: '11px', opacity: 0.6 }} />{farmer.phone}</td>
-                    <td style={{ padding: '14px 16px' }}><FaHome style={{ marginRight: '6px', fontSize: '11px', opacity: 0.6 }} />{farmer.village}</td>
-                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '500' }}>{totalAmount.toLocaleString()}</td>
-                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: totalDiscountsReceived > 0 ? 'bold' : 'normal', color: totalDiscountsReceived > 0 ? '#10b981' : '#6b7280' }}>{totalDiscountsReceived.toLocaleString()}</td>
-                    <td style={{ padding: '14px 16px', textAlign: 'right' }}>{paidAmount.toLocaleString()}</td>
-                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 'bold', color: balance > 0 ? '#ef4444' : '#10b981', fontSize: '15px' }}>{balance.toLocaleString()}</td>
-                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button onClick={() => handleEdit(farmer)} style={{ background: '#17a2b8', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#138496'} onMouseLeave={(e) => e.target.style.background = '#17a2b8'} title="Edit Farmer"><FaEdit /></button>
-                        <button onClick={() => handleDelete(farmer.id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#c82333'} onMouseLeave={(e) => e.target.style.background = '#dc3545'} title="Delete Farmer"><FaTrash /></button>
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <button 
+                          onClick={() => handleEdit(farmer)} 
+                          style={{ 
+                            background: '#17a2b8', 
+                            color: 'white', 
+                            border: 'none', 
+                            padding: '10px', 
+                            borderRadius: '8px', 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '40px',
+                            height: '40px',
+                            fontSize: '16px'
+                          }}
+                          title="Edit Farmer"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(farmer.id)} 
+                          style={{ 
+                            background: '#dc3545', 
+                            color: 'white', 
+                            border: 'none', 
+                            padding: '10px', 
+                            borderRadius: '8px', 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '40px',
+                            height: '40px',
+                            fontSize: '16px'
+                          }}
+                          title="Delete Farmer"
+                        >
+                          <FaTrash />
+                        </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                    
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(2, 1fr)', 
+                      gap: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid rgba(100, 116, 139, 0.2)'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Total Amount</div>
+                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#e2e8f0' }}>
+                          {totalAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Balance</div>
+                        <div style={{ 
+                          fontSize: '15px', 
+                          fontWeight: 'bold', 
+                          color: balance > 0 ? '#ef4444' : '#10b981' 
+                        }}>
+                          {balance.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Paid</div>
+                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#10b981' }}>
+                          {paidAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Discounts</div>
+                        <div style={{ 
+                          fontSize: '15px', 
+                          fontWeight: '600', 
+                          color: totalDiscountsReceived > 0 ? '#22c55e' : '#64748b' 
+                        }}>
+                          {totalDiscountsReceived.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               })
             ) : (
-              <tr>
-                <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>
-                  {hasActiveFilters ? 'No farmers match the selected filters.' : 'No farmers found. Add your first farmer!'}
-                </td>
-              </tr>
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '40px', 
+                background: 'rgba(30, 41, 59, 0.4)',
+                borderRadius: '12px',
+                color: '#94a3b8'
+              }}>
+                {hasActiveFilters ? 'No farmers match the selected filters.' : 'No farmers found. Add your first farmer!'}
+              </div>
             )}
-          </tbody>
-        </table>
       </div>
 
       {showModal && (

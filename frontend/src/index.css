@@ -2828,6 +2828,16 @@ tbody tr:hover {
     width: 260px;
   }
 
+  /* Hide scrollbar for horizontal stats */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   /* Mobile stats grid optimization */
   .stats-grid {
     margin: 0 12px 12px 12px !important;
