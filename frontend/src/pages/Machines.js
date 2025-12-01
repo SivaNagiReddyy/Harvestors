@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { machineAPI, machineOwnerAPI } from '../api';
-import { FaPlus, FaTrash, FaCog, FaFileExport, FaEdit, FaTractor, FaPhone, FaUserTie } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCog, FaFileExport, FaEdit, FaTractor, FaPhone, FaUserTie, FaEllipsisV, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import axios from 'axios';
@@ -32,6 +32,8 @@ const Machines = () => {
 
   // Filter states
   const [filterOwner, setFilterOwner] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
 
   useEffect(() => {
     fetchMachines();
@@ -230,119 +232,199 @@ const Machines = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Machines</h2>
-        <p>Manage harvesting machines and drivers</p>
+      {/* Page Header with Actions */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '10px 0' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Machines</h2>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+          <button 
+            className="btn btn-success" 
+            onClick={() => setShowModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: 'none',
+              background: '#28a745',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+          >
+            <FaPlus /> Add Machine
+          </button>
+          <button
+            onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+            style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(100, 116, 139, 0.3)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              color: '#e2e8f0',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '16px'
+            }}
+          >
+            <FaEllipsisV />
+          </button>
+          {showOverflowMenu && (
+            <div style={{
+              position: 'absolute',
+              top: '45px',
+              right: '0',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              minWidth: '150px',
+              zIndex: 1000
+            }}>
+              <button
+                onClick={() => {
+                  exportToCSV(formatDataForExport(filteredMachines, 'machines'), 'machines');
+                  setShowOverflowMenu(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '14px',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(102, 126, 234, 0.2)'}
+                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+              >
+                <FaFileExport /> Export
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Compact Filter - Dashboard Style */}
-      <div style={{ 
-        padding: '12px 20px',
-        marginBottom: '16px'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <div style={{ 
+      {/* Collapsible Filter Section */}
+      <div style={{ marginBottom: '16px' }}>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            background: 'rgba(30, 41, 59, 0.6)',
+            border: '1px solid rgba(100, 116, 139, 0.3)',
+            borderRadius: '12px',
+            color: '#e2e8f0',
+            cursor: 'pointer',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            gap: '12px',
-            flex: '1',
-            minWidth: '200px'
-          }}>
-            <label style={{ 
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#94a3b8',
-              whiteSpace: 'nowrap'
-            }}>
-              Filter by Owner:
-            </label>
-            <select
-              value={filterOwner}
-              onChange={(e) => setFilterOwner(e.target.value)}
-              style={{
-                flex: '1',
-                maxWidth: '300px',
-                padding: '8px 12px',
-                background: 'rgba(30, 41, 59, 0.6)',
-                border: '1px solid rgba(100, 116, 139, 0.3)',
-                borderRadius: '8px',
-                color: '#e2e8f0',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="">All Owners</option>
-              {owners.map((owner) => (
-                <option key={owner.id} value={owner.id}>{owner.name}</option>
-              ))}
-            </select>
-            {filterOwner && (
-              <button
-                onClick={clearFilters}
-                style={{
-                  padding: '6px 12px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '6px',
-                  color: '#ef4444',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Clear
-              </button>
+            fontSize: '14px',
+            fontWeight: '600',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.background = 'rgba(30, 41, 59, 0.8)'}
+          onMouseLeave={(e) => e.target.style.background = 'rgba(30, 41, 59, 0.6)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🔍 Filters
+            {hasActiveFilters && (
+              <span style={{
+                background: '#667eea',
+                color: 'white',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontSize: '11px',
+                fontWeight: '600'
+              }}>
+                Active
+              </span>
             )}
           </div>
-          <span style={{ 
-            fontSize: '13px',
-            color: '#64748b',
-            whiteSpace: 'nowrap'
+          {showFilters ? <FaChevronUp /> : <FaChevronDown />}
+        </button>
+
+        {showFilters && (
+          <div style={{ 
+            background: 'rgba(30, 41, 59, 0.6)', 
+            padding: '16px', 
+            borderRadius: '12px', 
+            marginTop: '8px',
+            border: '1px solid rgba(100, 116, 139, 0.3)'
           }}>
-            Showing {filteredMachines.length} of {machines.length} machines
-          </span>
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Showing {filteredMachines.length} of {machines.length} machines
+              </span>
+              {hasActiveFilters && (
+                <button 
+                  onClick={clearFilters}
+                  style={{
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
+                <FaUserTie style={{ marginRight: '6px', fontSize: '12px' }} /> Owner
+              </label>
+              <select
+                value={filterOwner}
+                onChange={(e) => setFilterOwner(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  color: '#e2e8f0',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="">All Owners</option>
+                {owners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>{owner.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="table-container" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.3)', borderRadius: '12px', overflow: 'hidden', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 116, 139, 0.2)' }}>
-        <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>🚜 Machine Details</h3>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(filteredMachines, 'machines'), 'machines')} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
-              <FaFileExport /> Export
-            </button>
-            <button className="btn btn-success" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' }}>
-              <FaPlus /> Add Machine
-            </button>
+      {/* Card-Style Machine List */}
+      <div style={{ 
+        background: 'rgba(30, 41, 59, 0.6)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        border: '1px solid rgba(100, 116, 139, 0.3)'
+      }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#e2e8f0' }}>🚜 Machines List</h3>
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+            Earnings include both Harvesting Jobs and Dealer Rentals
           </div>
         </div>
-        <div style={{ padding: '12px 20px', fontSize: '13px', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.4)', borderBottom: '1px solid rgba(100, 116, 139, 0.2)' }}>
-          <strong>Note:</strong> Earnings shown include <strong>both Direct Harvesting Jobs and Dealer Rentals</strong>.
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Owner</th>
-              <th>Machine Type</th>
-              <th>Machine Number</th>
-              <th>Driver Name</th>
-              <th>Driver Phone</th>
-              <th>Owner Rate/Hr</th>
-              <th>Discounts Given</th>
-              <th>Total Earned</th>
-              <th>Expenses</th>
-              <th>Balance Amount</th>
-              <th>Paid</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div style={{ padding: '12px' }}>
             {filteredMachines.length > 0 ? (
               filteredMachines.map((machine) => {
                 // ============================================
@@ -420,43 +502,150 @@ const Machines = () => {
                   .reduce((sum, job) => sum + parseFloat(job.discount_from_owner || 0), 0);
                 
                 return (
-                  <tr key={`${machine.id}-${totalEarned}-${machineExpenses}-${machinePaid}`}>
-                    <td>{machine.machine_owners?.name || 'N/A'}</td>
-                    <td>{machine.machine_type}</td>
-                    <td>{machine.machine_number}</td>
-                    <td>{machine.driver_name}</td>
-                    <td>{machine.driver_phone}</td>
-                    <td>₹{machine.owner_rate_per_hour?.toLocaleString() || 0}</td>
-                    <td style={{ 
-                      fontWeight: totalDiscountsGiven > 0 ? 'bold' : 'normal',
-                      color: totalDiscountsGiven > 0 ? '#ef4444' : '#6b7280'
+                  <div
+                    key={`${machine.id}-${totalEarned}-${machineExpenses}-${machinePaid}`}
+                    style={{
+                      background: 'rgba(51, 65, 85, 0.4)',
+                      borderRadius: '10px',
+                      padding: '16px',
+                      marginBottom: '12px',
+                      border: '1px solid rgba(100, 116, 139, 0.3)',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(102, 126, 234, 0.15)';
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(51, 65, 85, 0.4)';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }}
+                  >
+                    {/* Machine Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                          <FaTractor style={{ fontSize: '20px', color: '#667eea' }} />
+                          <div>
+                            <div style={{ fontSize: '16px', fontWeight: '600', color: '#e2e8f0' }}>
+                              {machine.machine_type} - {machine.machine_number}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <FaUserTie style={{ fontSize: '10px' }} />
+                              Owner: {machine.machine_owners?.name || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#cbd5e1', marginLeft: '30px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div>Driver: {machine.driver_name || 'N/A'}</div>
+                          {machine.driver_phone && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <FaPhone style={{ fontSize: '10px' }} />
+                              <a href={`tel:${machine.driver_phone}`} style={{ color: '#60a5fa', textDecoration: 'none' }}>
+                                {machine.driver_phone}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'right' }}>
+                        Rate: ₹{machine.owner_rate_per_hour?.toLocaleString() || 0}/hr
+                      </div>
+                    </div>
+
+                    {/* Financial Grid - 3x2 */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '8px',
+                      marginBottom: '12px',
+                      padding: '10px',
+                      background: 'rgba(15, 23, 42, 0.4)',
+                      borderRadius: '8px'
                     }}>
-                      ₹{totalDiscountsGiven.toLocaleString()}
-                    </td>
-                    <td style={{ fontWeight: 'bold', color: totalEarned > 0 ? '#10b981' : '#6b7280' }}>
-                      ₹{totalEarned.toLocaleString()}
-                    </td>
-                    <td style={{ color: '#f59e0b' }}>₹{machineExpenses.toLocaleString()}</td>
-                    <td style={{ fontWeight: 'bold', color: '#10b981' }}>₹{netPayable.toLocaleString()}</td>
-                    <td>₹{machinePaid.toLocaleString()}</td>
-                    <td>
-                      <ActionsCell
-                        onEdit={() => handleEdit(machine)}
-                        onDelete={() => handleDelete(machine.id)}
-                      />
-                    </td>
-                  </tr>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Earned</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#10b981' }}>
+                          ₹{totalEarned.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Expenses</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#f59e0b' }}>
+                          ₹{machineExpenses.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Paid</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1' }}>
+                          ₹{machinePaid.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Balance</div>
+                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: netPayable > 0 ? '#34d399' : '#94a3b8' }}>
+                          ₹{netPayable.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Discounts</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: totalDiscountsGiven > 0 ? '#ef4444' : '#6b7280' }}>
+                          ₹{totalDiscountsGiven.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => handleEdit(machine)}
+                        style={{
+                          background: '#17a2b8',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          minHeight: '40px'
+                        }}
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(machine.id)}
+                        style={{
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          minHeight: '40px'
+                        }}
+                      >
+                        <FaTrash /> Delete
+                      </button>
+                    </div>
+                  </div>
                 );
               })
             ) : (
-              <tr>
-                <td colSpan="12" style={{ textAlign: 'center', padding: '40px' }}>
-                  {hasActiveFilters ? 'No machines match the selected filters.' : 'No machines found. Add your first machine!'}
-                </td>
-              </tr>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+                {hasActiveFilters ? '🔍 No machines match the selected filters.' : '🚜 No machines found. Add your first machine!'}
+              </div>
             )}
-          </tbody>
-        </table>
+        </div>
       </div>
 
       {showModal && (
