@@ -235,41 +235,80 @@ const Machines = () => {
         <p>Manage harvesting machines and drivers</p>
       </div>
 
-      {/* Machine Statistics */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', margin: '0 30px 20px 30px' }}>
-        <div className="stat-card info">
-          <h3>Machine Owners</h3>
-          <div className="stat-value">{owners.length || 0}</div>
-          <small>Total registered owners</small>
-        </div>
-        <div className="stat-card info">
-          <h3>Total Machines</h3>
-          <div className="stat-value">{machines.length || 0}</div>
-          <small>Registered machines</small>
+      {/* Compact Filter - Dashboard Style */}
+      <div style={{ 
+        padding: '12px 20px',
+        marginBottom: '16px'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flex: '1',
+            minWidth: '200px'
+          }}>
+            <label style={{ 
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#94a3b8',
+              whiteSpace: 'nowrap'
+            }}>
+              Filter by Owner:
+            </label>
+            <select
+              value={filterOwner}
+              onChange={(e) => setFilterOwner(e.target.value)}
+              style={{
+                flex: '1',
+                maxWidth: '300px',
+                padding: '8px 12px',
+                background: 'rgba(30, 41, 59, 0.6)',
+                border: '1px solid rgba(100, 116, 139, 0.3)',
+                borderRadius: '8px',
+                color: '#e2e8f0',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">All Owners</option>
+              {owners.map((owner) => (
+                <option key={owner.id} value={owner.id}>{owner.name}</option>
+              ))}
+            </select>
+            {filterOwner && (
+              <button
+                onClick={clearFilters}
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '6px',
+                  color: '#ef4444',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <span style={{ 
+            fontSize: '13px',
+            color: '#64748b',
+            whiteSpace: 'nowrap'
+          }}>
+            Showing {filteredMachines.length} of {machines.length} machines
+          </span>
         </div>
       </div>
-
-      {/* Filter Section */}
-      <FilterBar
-        filters={[
-          {
-            type: 'select',
-            label: 'Machine Owner',
-            value: filterOwner,
-            onChange: (e) => setFilterOwner(e.target.value),
-            options: [
-              { value: '', label: 'All Owners' },
-              ...owners.map((owner) => ({
-                value: owner.id,
-                label: owner.name
-              }))
-            ]
-          }
-        ]}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        resultsText={`Showing ${filteredMachines.length} of ${machines.length} machines`}
-      />
 
       <div className="table-container" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.3)', borderRadius: '12px', overflow: 'hidden', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 116, 139, 0.2)' }}>
         <div className="table-header" style={{ padding: '20px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)' }}>
