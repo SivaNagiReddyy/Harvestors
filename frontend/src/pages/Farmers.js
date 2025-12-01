@@ -209,27 +209,44 @@ const Farmers = () => {
         <p>Manage farmers and their information</p>
       </div>
 
-      {/* Job Statistics */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', margin: '0 30px 20px 30px' }}>
-        <div className="stat-card success">
-          <h3>Farmers</h3>
-          <div className="stat-value">{farmers.length || 0}</div>
-          <small>Total registered farmers</small>
+      {/* Job Statistics - Compact for Mobile */}
+      <div className="stats-grid" style={{ 
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '12px',
+        margin: '0 20px 16px 20px'
+      }}>
+        <div className="stat-card success" style={{
+          padding: '12px',
+          borderLeft: '3px solid #22c55e'
+        }}>
+          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Farmers</h3>
+          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{farmers.length || 0}</div>
+          <small style={{ fontSize: '11px' }}>Total registered</small>
         </div>
-        <div className="stat-card warning">
-          <h3>Total Jobs</h3>
-          <div className="stat-value">{jobs.length || 0}</div>
-          <small>All harvesting jobs</small>
+        <div className="stat-card warning" style={{
+          padding: '12px',
+          borderLeft: '3px solid #f59e0b'
+        }}>
+          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Total Jobs</h3>
+          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{jobs.length || 0}</div>
+          <small style={{ fontSize: '11px' }}>All jobs</small>
         </div>
-        <div className="stat-card success">
-          <h3>Completed</h3>
-          <div className="stat-value">{jobs.filter(j => j.status === 'Completed').length || 0}</div>
-          <small>Jobs completed</small>
+        <div className="stat-card success" style={{
+          padding: '12px',
+          borderLeft: '3px solid #22c55e'
+        }}>
+          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Completed</h3>
+          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{jobs.filter(j => j.status === 'Completed').length || 0}</div>
+          <small style={{ fontSize: '11px' }}>Done</small>
         </div>
-        <div className="stat-card warning">
-          <h3>Pending</h3>
-          <div className="stat-value">{jobs.filter(j => j.status !== 'Completed').length || 0}</div>
-          <small>Jobs pending</small>
+        <div className="stat-card warning" style={{
+          padding: '12px',
+          borderLeft: '3px solid #f59e0b'
+        }}>
+          <h3 style={{ fontSize: '13px', margin: '0 0 4px 0' }}>Pending</h3>
+          <div className="stat-value" style={{ fontSize: '24px', margin: '4px 0' }}>{jobs.filter(j => j.status !== 'Completed').length || 0}</div>
+          <small style={{ fontSize: '11px' }}>In progress</small>
         </div>
       </div>
 
