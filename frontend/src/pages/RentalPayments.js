@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaMoneyBillWave, FaFileExport, FaEllipsisV, FaChevronDown, FaChevronUp, FaCalendarAlt, FaUserTie, FaEdit, FaTrash, FaTruck } from 'react-icons/fa';
+import { FaPlus, FaMoneyBillWave, FaFileExport, FaEllipsisV, FaChevronDown, FaChevronUp, FaCalendarAlt, FaUserTie, FaEdit, FaTrash, FaTruck, FaUser } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
 import '../index.css';
