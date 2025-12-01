@@ -109,7 +109,8 @@ const Payments = () => {
   const fetchMachineOwners = async () => {
     try {
       const response = await machineOwnerAPI.getAll();
-      setMachineOwners(response.data);
+      // setMachineOwners(response.data);
+      console.log('Machine owners:', response.data);
     } catch (error) {
       console.error('Error fetching machine owners:', error);
     }
@@ -118,7 +119,8 @@ const Payments = () => {
   const fetchFarmers = async () => {
     try {
       const response = await farmerAPI.getAll();
-      setFarmers(response.data);
+      // setFarmers(response.data);
+      console.log('Farmers:', response.data);
     } catch (error) {
       console.error('Error fetching farmers:', error);
     }
