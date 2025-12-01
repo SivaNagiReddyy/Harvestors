@@ -9,8 +9,8 @@ const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [machines, setMachines] = useState([]);
-  const [machineOwners, setMachineOwners] = useState([]);
-  const [farmers, setFarmers] = useState([]);
+  // const [machineOwners, setMachineOwners] = useState([]);
+  // const [farmers, setFarmers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [machineBalances, setMachineBalances] = useState({});

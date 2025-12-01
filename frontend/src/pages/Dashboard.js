@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { dashboardAPI } from '../api';
 import { FaSeedling, FaBuilding, FaChartLine, FaFilter, FaTimes } from 'react-icons/fa';
 
@@ -13,7 +13,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchMachines();
     fetchStats();
-  }, []);
+  }, [fetchStats]);
 
   useEffect(() => {
     fetchStats();
@@ -32,7 +32,7 @@ const Dashboard = () => {
     }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const queryParam = selectedMachine ? `?machine_id=${selectedMachine}` : '';
       const response = await dashboardAPI.getStats(queryParam);
@@ -44,7 +44,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMachine]);
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;

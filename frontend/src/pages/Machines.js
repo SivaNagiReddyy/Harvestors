@@ -209,7 +209,7 @@ const Machines = () => {
   }, []);
 
   // Wait for all data to load before rendering
-  const isDataReady = !loading && machines.length > 0;
+  // const isDataReady = !loading && machines.length > 0;
 
   // Apply filters
   const filteredMachines = machines.filter(machine => {
