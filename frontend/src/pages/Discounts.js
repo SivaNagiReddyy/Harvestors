@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { jobAPI } from '../api';
-import { FaPercent, FaPlus, FaFileExport } from 'react-icons/fa';
+import { FaPercent, FaPlus, FaFileExport, FaEllipsisV, FaEdit, FaTrash, FaTractor, FaUser } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
@@ -9,6 +9,7 @@ const Discounts = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [formData, setFormData] = useState({
     discountType: '', // 'owner' or 'farmer'
     machineId: '',
@@ -177,134 +178,317 @@ const Discounts = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
+      {/* Page Header with Actions */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '10px 0' }}>
         <div>
-          <h1><FaPercent /> Discount Management</h1>
-          <p>Manage discounts from owners and to farmers</p>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FaPercent /> Discount Management
+          </h2>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-secondary" onClick={() => exportToCSV(formatDataForExport(jobs, 'discounts'), 'discounts')}>
-            <FaFileExport /> Export
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+          <button 
+            className="btn btn-success" 
+            onClick={handleAddNew}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: 'none',
+              background: '#28a745',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+          >
+            <FaPlus /> Add Discount
           </button>
-          <button className="btn btn-primary" onClick={handleAddNew}>
-            <FaPlus style={{ marginRight: '8px' }} />
-            Add Discount
+          <button
+            onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+            style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(100, 116, 139, 0.3)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              color: '#e2e8f0',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '16px'
+            }}
+          >
+            <FaEllipsisV />
           </button>
+          {showOverflowMenu && (
+            <div style={{
+              position: 'absolute',
+              top: '45px',
+              right: '0',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1px solid rgba(100, 116, 139, 0.4)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              minWidth: '150px',
+              zIndex: 1000
+            }}>
+              <button
+                onClick={() => {
+                  exportToCSV(formatDataForExport(jobs, 'discounts'), 'discounts');
+                  setShowOverflowMenu(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#e2e8f0',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '14px',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(102, 126, 234, 0.2)'}
+                onMouseLeave={(e) => e.target.style.background = 'transparent'}
+              >
+                <FaFileExport /> Export
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', marginBottom: '20px' }}>
-        <div className="stat-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-          <div className="stat-icon">💰</div>
-          <div className="stat-details">
-            <div className="stat-label">Discount from Owners</div>
-            <div className="stat-value">₹{totalDiscountFromOwner.toFixed(2)}</div>
-            <small style={{ opacity: 0.9 }}>Reduces what you pay</small>
+      {/* Horizontal Stats Bar */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '16px', 
+        overflowX: 'auto',
+        paddingBottom: '4px'
+      }} className="hide-scrollbar">
+        <div style={{ 
+          minWidth: '150px',
+          padding: '14px 18px', 
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+          color: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+        }}>
+          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>From Owners 💰</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
+            ₹{(totalDiscountFromOwner/1000).toFixed(1)}k
           </div>
+          <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>Reduces what you pay</div>
         </div>
-
-        <div className="stat-card" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}>
-          <div className="stat-icon">💸</div>
-          <div className="stat-details">
-            <div className="stat-label">Discount to Farmers</div>
-            <div className="stat-value">₹{totalDiscountToFarmer.toFixed(2)}</div>
-            <small style={{ opacity: 0.9 }}>Reduces what you collect</small>
+        <div style={{ 
+          minWidth: '150px',
+          padding: '14px 18px', 
+          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+          color: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+        }}>
+          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>To Farmers 💸</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
+            ₹{(totalDiscountToFarmer/1000).toFixed(1)}k
           </div>
+          <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>Reduces what you collect</div>
         </div>
-
-        <div className="stat-card" style={{ background: `linear-gradient(135deg, ${netDiscountImpact >= 0 ? '#3b82f6' : '#f59e0b'} 0%, ${netDiscountImpact >= 0 ? '#2563eb' : '#d97706'} 100%)` }}>
-          <div className="stat-icon">{netDiscountImpact >= 0 ? '📈' : '📉'}</div>
-          <div className="stat-details">
-            <div className="stat-label">Net Impact</div>
-            <div className="stat-value">₹{Math.abs(netDiscountImpact).toFixed(2)}</div>
-            <small style={{ opacity: 0.9 }}>{netDiscountImpact >= 0 ? 'Benefit' : 'Cost'}</small>
+        <div style={{ 
+          minWidth: '130px',
+          padding: '14px 18px', 
+          background: `linear-gradient(135deg, ${netDiscountImpact >= 0 ? '#3b82f6' : '#f59e0b'} 0%, ${netDiscountImpact >= 0 ? '#2563eb' : '#d97706'} 100%)`, 
+          color: 'white',
+          borderRadius: '12px',
+          boxShadow: `0 4px 12px ${netDiscountImpact >= 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+        }}>
+          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>Net Impact {netDiscountImpact >= 0 ? '📈' : '📉'}</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
+            ₹{(Math.abs(netDiscountImpact)/1000).toFixed(1)}k
           </div>
+          <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>{netDiscountImpact >= 0 ? 'Benefit' : 'Cost'}</div>
         </div>
       </div>
 
-      {/* Jobs with Discounts Table */}
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Job ID</th>
-              <th>Farmer</th>
-              <th>Machine</th>
-              <th>Date</th>
-              <th>Discount To</th>
-              <th>Discount Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.length === 0 ? (
-              <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
-                  <div style={{ opacity: 0.5 }}>
-                    <FaPercent size={48} style={{ marginBottom: '10px' }} />
-                    <p>No jobs found</p>
+      {/* Jobs List - Card Layout */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {jobs.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '48px 20px',
+            background: 'rgba(51, 65, 85, 0.4)',
+            borderRadius: '12px',
+            border: '1px solid rgba(100, 116, 139, 0.3)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>
+              <FaPercent />
+            </div>
+            <div style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '500' }}>
+              No jobs found
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+              Add discounts to jobs to track them here
+            </div>
+          </div>
+        ) : (
+          jobs.map((job, index) => {
+            const discountFromOwner = parseFloat(job.discount_from_owner) || 0;
+            const discountToFarmer = parseFloat(job.discount_to_farmer) || 0;
+            const hasDiscount = discountFromOwner > 0 || discountToFarmer > 0;
+            
+            // Determine discount type and amount
+            let discountType = '-';
+            let discountAmount = 0;
+            let discountColor = 'inherit';
+            
+            if (discountFromOwner > 0 && discountToFarmer > 0) {
+              discountType = 'Both';
+              discountAmount = `Owner: ₹${discountFromOwner.toFixed(2)}, Farmer: ₹${discountToFarmer.toFixed(2)}`;
+              discountColor = '#3b82f6';
+            } else if (discountFromOwner > 0) {
+              discountType = 'Owner';
+              discountAmount = discountFromOwner;
+              discountColor = '#10b981';
+            } else if (discountToFarmer > 0) {
+              discountType = 'Farmer';
+              discountAmount = discountToFarmer;
+              discountColor = '#ef4444';
+            }
+
+            return (
+              <div 
+                key={job.id}
+                style={{
+                  background: hasDiscount ? 'rgba(51, 65, 85, 0.4)' : 'rgba(51, 65, 85, 0.2)',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  opacity: hasDiscount ? 1 : 0.6
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(102, 126, 234, 0.15)';
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                  e.currentTarget.style.opacity = 1;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = hasDiscount ? 'rgba(51, 65, 85, 0.4)' : 'rgba(51, 65, 85, 0.2)';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                  e.currentTarget.style.opacity = hasDiscount ? 1 : 0.6;
+                }}
+              >
+                {/* Header: Job ID and Discount Type */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                    Job #{index + 1}
                   </div>
-                </td>
-              </tr>
-            ) : (
-              jobs.map((job, index) => {
-                const discountFromOwner = parseFloat(job.discount_from_owner) || 0;
-                const discountToFarmer = parseFloat(job.discount_to_farmer) || 0;
-                const hasDiscount = discountFromOwner > 0 || discountToFarmer > 0;
-                
-                // Determine discount type and amount
-                let discountType = '-';
-                let discountAmount = 0;
-                let discountColor = 'inherit';
-                
-                if (discountFromOwner > 0 && discountToFarmer > 0) {
-                  discountType = 'Both';
-                  discountAmount = `Owner: ₹${discountFromOwner.toFixed(2)}, Farmer: ₹${discountToFarmer.toFixed(2)}`;
-                  discountColor = '#3b82f6';
-                } else if (discountFromOwner > 0) {
-                  discountType = 'Owner';
-                  discountAmount = discountFromOwner;
-                  discountColor = '#10b981';
-                } else if (discountToFarmer > 0) {
-                  discountType = 'Farmer';
-                  discountAmount = discountToFarmer;
-                  discountColor = '#ef4444';
-                }
+                  <span style={{ 
+                    color: discountColor,
+                    fontWeight: hasDiscount ? '600' : 'normal',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    backgroundColor: hasDiscount ? `${discountColor}15` : 'transparent',
+                    border: hasDiscount ? `1px solid ${discountColor}40` : 'none'
+                  }}>
+                    {discountType}
+                  </span>
+                </div>
 
-                return (
-                  <tr key={job.id} style={{ opacity: hasDiscount ? 1 : 0.5 }}>
-                    <td>#{index + 1}</td>
-                    <td>{job.farmers?.name || 'N/A'}</td>
-                    <td>{job.machines?.driver_name || 'N/A'} - {job.machines?.machine_owners?.name || 'N/A'}</td>
-                    <td>{new Date(job.work_date || job.scheduled_date).toLocaleDateString()}</td>
-                    <td>
-                      <span style={{ 
-                        color: discountColor,
-                        fontWeight: hasDiscount ? '600' : 'normal',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        backgroundColor: hasDiscount ? `${discountColor}15` : 'transparent'
-                      }}>
-                        {discountType}
-                      </span>
-                    </td>
-                    <td style={{ color: discountColor, fontWeight: hasDiscount ? '600' : 'normal' }}>
-                      {typeof discountAmount === 'number' ? `₹${discountAmount.toFixed(2)}` : discountAmount}
-                    </td>
-                    <td>
-                      <ActionsCell
-                        onEdit={() => handleEdit(job)}
-                        onDelete={() => handleDelete(job.id)}
-                        deleteTitle="Remove all discounts"
-                      />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                {/* Farmer and Machine Info */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <FaUser style={{ fontSize: '12px', color: '#94a3b8' }} />
+                    <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '500' }}>
+                      {job.farmers?.name || 'N/A'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '20px' }}>
+                    <FaTractor style={{ fontSize: '11px', color: '#94a3b8' }} />
+                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                      {job.machines?.driver_name || 'N/A'} - {job.machines?.machine_owners?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Date and Amount */}
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  padding: '10px',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  borderRadius: '8px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
+                    {new Date(job.work_date || job.scheduled_date).toLocaleDateString()}
+                  </div>
+                  <div style={{ 
+                    fontSize: '15px', 
+                    fontWeight: 'bold', 
+                    color: discountColor 
+                  }}>
+                    {typeof discountAmount === 'number' ? `₹${discountAmount.toLocaleString()}` : discountAmount}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button 
+                    onClick={() => handleEdit(job)}
+                    style={{ 
+                      background: '#17a2b8', 
+                      color: 'white', 
+                      border: 'none', 
+                      padding: '8px 16px', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      fontSize: '13px', 
+                      fontWeight: '500',
+                      minHeight: '40px',
+                      transition: 'all 0.2s' 
+                    }} 
+                    onMouseEnter={(e) => e.target.style.background = '#138496'} 
+                    onMouseLeave={(e) => e.target.style.background = '#17a2b8'}
+                  >
+                    <FaEdit /> Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(job.id)}
+                    style={{ 
+                      background: '#dc3545', 
+                      color: 'white', 
+                      border: 'none', 
+                      padding: '8px 16px', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      fontSize: '13px', 
+                      fontWeight: '500',
+                      minHeight: '40px',
+                      transition: 'all 0.2s' 
+                    }} 
+                    onMouseEnter={(e) => e.target.style.background = '#c82333'} 
+                    onMouseLeave={(e) => e.target.style.background = '#dc3545'}
+                    title="Remove all discounts"
+                  >
+                    <FaTrash /> Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Add/Edit Discount Modal */}
