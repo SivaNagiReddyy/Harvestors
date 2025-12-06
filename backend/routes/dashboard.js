@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 // Get dashboard statistics
 router.get('/stats', auth, async (req, res) => {
   try {
-    const { machine_id } = req.query;
+    const { machine_id, village } = req.query;
     
     // ============================================
     // SECTION 1: MACHINE OWNERSHIP MANAGEMENT
@@ -77,10 +77,14 @@ router.get('/stats', auth, async (req, res) => {
         rate_per_hour,
         advance_from_farmer,
         discount_to_farmer,
-        net_amount_from_farmer
+        net_amount_from_farmer,
+        farmers!inner(village)
       `);
     if (machine_id) {
       jobsWithPaymentsQuery = jobsWithPaymentsQuery.eq('machine_id', machine_id);
+    }
+    if (village) {
+      jobsWithPaymentsQuery = jobsWithPaymentsQuery.eq('farmers.village', village);
     }
     const { data: allJobsWithPayments } = await jobsWithPaymentsQuery;
 
@@ -152,9 +156,12 @@ router.get('/stats', auth, async (req, res) => {
 
     // Calculate Total Revenue from all jobs (not just payments received)
     // Revenue and profit use GROSS (no discounts)
-    let revenueQuery = supabase.from('harvesting_jobs').select('total_amount, hours, rate_per_hour');
+    let revenueQuery = supabase.from('harvesting_jobs').select('total_amount, hours, rate_per_hour, farmers!inner(village)');
     if (machine_id) {
       revenueQuery = revenueQuery.eq('machine_id', machine_id);
+    }
+    if (village) {
+      revenueQuery = revenueQuery.eq('farmers.village', village);
     }
     const { data: allJobsForRevenue } = await revenueQuery;
 
@@ -177,10 +184,14 @@ router.get('/stats', auth, async (req, res) => {
         discount_to_farmer,
         net_amount_to_owner,
         net_amount_from_farmer,
-        machines!inner(id, machine_owner_id, owner_rate_per_hour)
+        machines!inner(id, machine_owner_id, owner_rate_per_hour),
+        farmers!inner(village)
       `);
     if (machine_id) {
       ownerJobsQuery = ownerJobsQuery.eq('machine_id', machine_id);
+    }
+    if (village) {
+      ownerJobsQuery = ownerJobsQuery.eq('farmers.village', village);
     }
     const { data: allJobs, error: jobsError } = await ownerJobsQuery;
 

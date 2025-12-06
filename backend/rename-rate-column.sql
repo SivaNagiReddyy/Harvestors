@@ -10,3 +10,4 @@ COMMENT ON COLUMN machines.owner_rate_per_hour IS 'Hourly rate paid to the machi
 
 -- Note: This does not change any data, only the column name
 -- All existing rates remain the same, just with a more accurate name
+l.

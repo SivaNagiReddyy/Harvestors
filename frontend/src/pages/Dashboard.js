@@ -7,7 +7,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [machines, setMachines] = useState([]);
+  const [villages, setVillages] = useState([]);
   const [selectedMachine, setSelectedMachine] = useState('');
+  const [selectedVillage, setSelectedVillage] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const fetchMachines = async () => {
@@ -23,9 +25,26 @@ const Dashboard = () => {
     }
   };
 
+  const fetchVillages = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/farmers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      const uniqueVillages = [...new Set(data.map(f => f.village).filter(Boolean))];
+      setVillages(uniqueVillages.sort());
+    } catch (error) {
+      console.error('Error fetching villages:', error);
+    }
+  };
+
   const fetchStats = useCallback(async () => {
     try {
-      const queryParam = selectedMachine ? `?machine_id=${selectedMachine}` : '';
+      const params = new URLSearchParams();
+      if (selectedMachine) params.append('machine_id', selectedMachine);
+      if (selectedVillage) params.append('village', selectedVillage);
+      const queryParam = params.toString() ? `?${params.toString()}` : '';
       const response = await dashboardAPI.getStats(queryParam);
       console.log('Dashboard stats received:', response.data);
       console.log('Total Machines count:', response.data?.counts?.totalMachines);
@@ -35,10 +54,11 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedMachine]);
+  }, [selectedMachine, selectedVillage]);
 
   useEffect(() => {
     fetchMachines();
+    fetchVillages();
     fetchStats();
   }, [fetchStats]);
 
@@ -50,6 +70,14 @@ const Dashboard = () => {
   const selectedMachineName = selectedMachineData 
     ? `${selectedMachineData.driver_name || 'Unknown'} - ${selectedMachineData.machine_owners?.name || 'Unknown'}`
     : null;
+
+  const filterLabel = selectedMachine && selectedVillage 
+    ? `${selectedMachineName} • ${selectedVillage}`
+    : selectedMachine 
+      ? selectedMachineName
+      : selectedVillage
+        ? selectedVillage
+        : 'All Data';
 
   return (
     <div style={{ position: 'relative' }}>
@@ -73,26 +101,26 @@ const Dashboard = () => {
             alignItems: 'center',
             gap: '8px',
             padding: '10px 16px',
-            background: selectedMachine ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#ffffff',
-            color: selectedMachine ? '#ffffff' : '#4b5563',
-            border: selectedMachine ? 'none' : '2px solid #e5e7eb',
+            background: (selectedMachine || selectedVillage) ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#ffffff',
+            color: (selectedMachine || selectedVillage) ? '#ffffff' : '#4b5563',
+            border: (selectedMachine || selectedVillage) ? 'none' : '2px solid #e5e7eb',
             borderRadius: '10px',
             fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
-            boxShadow: selectedMachine ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
+            boxShadow: (selectedMachine || selectedVillage) ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
             minWidth: '200px',
             justifyContent: 'space-between'
           }}
           onMouseEnter={(e) => {
-            if (!selectedMachine) {
+            if (!selectedMachine && !selectedVillage) {
               e.currentTarget.style.borderColor = '#667eea';
               e.currentTarget.style.boxShadow = '0 4px 8px rgba(102, 126, 234, 0.2)';
             }
           }}
           onMouseLeave={(e) => {
-            if (!selectedMachine) {
+            if (!selectedMachine && !selectedVillage) {
               e.currentTarget.style.borderColor = '#e5e7eb';
               e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
             }
@@ -106,14 +134,15 @@ const Dashboard = () => {
               whiteSpace: 'nowrap',
               textAlign: 'left'
             }}>
-              {selectedMachineName || 'All Machines'}
+              {filterLabel}
             </span>
           </div>
-          {selectedMachine ? (
+          {(selectedMachine || selectedVillage) ? (
             <FaTimes 
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedMachine('');
+                setSelectedVillage('');
                 setShowFilterDropdown(false);
               }}
               style={{ 
@@ -145,10 +174,12 @@ const Dashboard = () => {
               borderRadius: '10px',
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
                 minWidth: '280px',
-                maxHeight: '400px',
+                maxHeight: '450px',
                 overflowY: 'auto',
                 zIndex: 1001
               }}>
+              
+              {/* Machine Filter Section */}
               <div style={{
                 padding: '12px 16px',
                 borderBottom: '1px solid #e5e7eb',
@@ -161,13 +192,12 @@ const Dashboard = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
-                Select Machine
+                Filter by Machine
               </div>
               
               <div
                 onClick={() => {
                   setSelectedMachine('');
-                  setShowFilterDropdown(false);
                 }}
                 style={{
                   padding: '12px 16px',
@@ -204,7 +234,6 @@ const Dashboard = () => {
                     key={machine.id}
                     onClick={() => {
                       setSelectedMachine(machine.id);
-                      setShowFilterDropdown(false);
                     }}
                     style={{
                       padding: '12px 16px',
@@ -233,6 +262,87 @@ const Dashboard = () => {
                           Owner: {ownerName}
                         </div>
                       </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Village Filter Section */}
+              <div style={{
+                padding: '12px 16px',
+                borderTop: '2px solid #e5e7eb',
+                borderBottom: '1px solid #e5e7eb',
+                background: '#f9fafb',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#6b7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginTop: '8px'
+              }}>
+                Filter by Village
+              </div>
+              
+              <div
+                onClick={() => {
+                  setSelectedVillage('');
+                }}
+                style={{
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedVillage ? '500' : '600',
+                  color: selectedVillage ? '#6b7280' : '#667eea',
+                  background: selectedVillage ? 'transparent' : '#f3f4f6',
+                  transition: 'all 0.2s ease',
+                  borderBottom: '1px solid #f3f4f6'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f9fafb';
+                  e.currentTarget.style.paddingLeft = '20px';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = selectedVillage ? 'transparent' : '#f3f4f6';
+                  e.currentTarget.style.paddingLeft = '16px';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {!selectedVillage && <span style={{ fontSize: '16px' }}>✓</span>}
+                  <span>All Villages</span>
+                </div>
+              </div>
+
+              {villages.map((village) => {
+                const isSelected = selectedVillage === village;
+                
+                return (
+                  <div
+                    key={village}
+                    onClick={() => {
+                      setSelectedVillage(village);
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: isSelected ? '600' : '500',
+                      color: isSelected ? '#667eea' : '#374151',
+                      background: isSelected ? '#f3f4f6' : 'transparent',
+                      transition: 'all 0.2s ease',
+                      borderBottom: '1px solid #f3f4f6'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                      e.currentTarget.style.paddingLeft = '20px';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = isSelected ? '#f3f4f6' : 'transparent';
+                      e.currentTarget.style.paddingLeft = '16px';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {isSelected && <span style={{ fontSize: '16px' }}>✓</span>}
+                      <span>{village}</span>
                     </div>
                   </div>
                 );
@@ -335,9 +445,9 @@ const Dashboard = () => {
                 <div className="breakdown-card payable">
                   <div className="breakdown-icon">⬆️</div>
                   <div className="breakdown-details">
-                    <span className="breakdown-label">To Pay to Owners (Combined)</span>
-                    <span className="breakdown-value">₹{(Math.round(((stats?.harvesting?.pendingToOwners || 0) + (stats?.dealerRentals?.pendingToOwners || 0)) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Direct & rental combined</span>
+                    <span className="breakdown-label">To Pay to Owners</span>
+                    <span className="breakdown-value">₹{(Math.round((stats?.harvesting?.totalToPayToOwners || 0) * 100) / 100).toLocaleString()}</span>
+                    <span className="breakdown-sublabel">Total owner cost (at agreed rate)</span>
                   </div>
                 </div>
               </div>

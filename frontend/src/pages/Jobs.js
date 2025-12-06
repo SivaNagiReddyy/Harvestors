@@ -590,10 +590,15 @@ const Jobs = () => {
                     borderRadius: '8px'
                   }}>
                     <div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '2px' }}>Hours</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '2px' }}>Duration</div>
                       <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>
                         <FaClock style={{ fontSize: '10px', marginRight: '4px', opacity: 0.7 }} />
-                        {job.hours || 0}h
+                        {(() => {
+                          const totalMinutes = Math.round((job.hours || 0) * 60);
+                          const hours = Math.floor(totalMinutes / 60);
+                          const minutes = totalMinutes % 60;
+                          return `${hours}h ${minutes}m`;
+                        })()}
                       </div>
                     </div>
                     <div>

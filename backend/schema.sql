@@ -40,7 +40,7 @@ CREATE TABLE machine_owners (
 CREATE TABLE farmers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    phone VARCHAR(50) UNIQUE NOT NULL,
+    phone VARCHAR(50) NOT NULL,
     email VARCHAR(255),
     village VARCHAR(255) NOT NULL,
     address TEXT,
