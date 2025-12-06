@@ -24,7 +24,7 @@ const Machines = () => {
     machineOwnerId: '',
     machineType: '',
     machineNumber: '',
-    ratePerAcre: '',
+    ratePerHour: '',
     driverName: '',
     driverPhone: '',
     status: 'Active'
@@ -148,7 +148,7 @@ const Machines = () => {
       machineOwnerId: machine.machine_owner_id || '',
       machineType: machine.machine_type || '',
       machineNumber: machine.machine_number || '',
-      ratePerAcre: machine.owner_rate_per_hour || '',
+      ratePerHour: machine.owner_rate_per_hour || '',
       driverName: machine.driver_name || '',
       driverPhone: machine.driver_phone || '',
       status: machine.status || 'Active'
@@ -165,7 +165,7 @@ const Machines = () => {
       machineOwnerId: '',
       machineType: '',
       machineNumber: '',
-      ratePerAcre: '',
+      ratePerHour: '',
       driverName: '',
       driverPhone: '',
       status: 'Active'
@@ -550,7 +550,9 @@ const Machines = () => {
                         </div>
                       </div>
                       <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'right' }}>
-                        Rate: ₹{machine.owner_rate_per_hour?.toLocaleString() || 0}/hr
+                        <div style={{ color: '#f59e0b', fontWeight: '600' }}>
+                          Rate: ₹{machine.owner_rate_per_hour?.toLocaleString() || 0}/hr
+                        </div>
                       </div>
                     </div>
 

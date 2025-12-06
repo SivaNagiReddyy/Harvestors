@@ -15,7 +15,8 @@ const Dashboard = () => {
   const fetchMachines = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/machines`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${API_URL}/api/machines`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -28,11 +29,30 @@ const Dashboard = () => {
   const fetchVillages = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/farmers`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      
+      // Fetch farmer villages
+      const farmersResponse = await fetch(`${API_URL}/api/farmers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await response.json();
-      const uniqueVillages = [...new Set(data.map(f => f.village).filter(Boolean))];
+      const farmersData = await farmersResponse.json();
+      const farmerVillages = farmersData.map(f => f.village).filter(Boolean);
+      console.log('Farmer villages:', farmerVillages);
+      
+      // Fetch dealer villages
+      const dealersResponse = await fetch(`${API_URL}/api/dealers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const dealersData = await dealersResponse.json();
+      console.log('Dealers data:', dealersData);
+      console.log('First dealer full data:', JSON.stringify(dealersData[0], null, 2));
+      const dealerVillages = dealersData.map(d => d.village_name).filter(Boolean);
+      console.log('Dealer villages:', dealerVillages);
+      
+      // Combine and get unique villages
+      const allVillages = [...farmerVillages, ...dealerVillages];
+      const uniqueVillages = [...new Set(allVillages)];
+      console.log('All unique villages:', uniqueVillages);
       setVillages(uniqueVillages.sort());
     } catch (error) {
       console.error('Error fetching villages:', error);
@@ -396,6 +416,18 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              <div className="enterprise-card hours-card">
+                <div className="card-header">
+                  <span className="card-icon">⏱️</span>
+                  <h4>Total Hours</h4>
+                </div>
+                <div className="card-amount" style={{ color: '#667eea' }}>{(stats?.combined?.totalHours || 0).toLocaleString()}</div>
+                <p className="card-description">Combined work hours</p>
+                <div className="card-footer">
+                  <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Total Time</span>
+                </div>
+              </div>
+
               <div className="enterprise-card profit-card">
                 <div className="card-header">
                   <span className="card-icon">📊</span>
@@ -468,6 +500,18 @@ const Dashboard = () => {
                 <p className="card-description">Total charged to farmers</p>
                 <div className="card-footer">
                   <span className="card-badge success">Income</span>
+                </div>
+              </div>
+
+              <div className="enterprise-card hours-card">
+                <div className="card-header">
+                  <span className="card-icon">⏱️</span>
+                  <h4>Total Hours</h4>
+                </div>
+                <div className="card-amount" style={{ color: '#667eea' }}>{(stats?.harvesting?.totalHours || 0).toLocaleString()}</div>
+                <p className="card-description">Hours worked in harvesting</p>
+                <div className="card-footer">
+                  <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Work Time</span>
                 </div>
               </div>
 
@@ -552,6 +596,29 @@ const Dashboard = () => {
                   <h4>Revenue from Dealers</h4>
                 </div>
                 <div className="card-amount positive">₹{(Math.round((stats?.dealerRentals?.totalRevenue || 0) * 100) / 100).toLocaleString()}</div>
+                <p className="card-description">Total charged to dealers</p>
+                <div className="card-footer">
+                  <span className="card-badge success">Income</span>
+                </div>
+              </div>
+
+              <div className="enterprise-card hours-card">
+                <div className="card-header">
+                  <span className="card-icon">⏱️</span>
+                  <h4>Rental Hours</h4>
+                </div>
+                <div className="card-amount" style={{ color: '#667eea' }}>{(stats?.dealerRentals?.totalHours || 0).toLocaleString()}</div>
+                <p className="card-description">Hours rented to dealers</p>
+                <div className="card-footer">
+                  <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Rental Time</span>
+                </div>
+              </div>
+
+              <div className="enterprise-card costs-card">
+                <div className="card-header">
+                  <span className="card-icon">💸</span>
+                  <h4>Owner Cost</h4>
+                </div>
                 <p className="card-description">Total charged to dealers</p>
                 <div className="card-footer">
                   <span className="card-badge success">Income</span>
