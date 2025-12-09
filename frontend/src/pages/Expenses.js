@@ -360,7 +360,7 @@ const Expenses = () => {
                 <option value="">All Machines</option>
                 {machines.map((machine) => (
                   <option key={machine.id} value={machine.id}>
-                    {machine.machine_type} - {machine.machine_number}
+                    {machine.machine_owners?.name || 'N/A'} + {machine.driver_name || 'N/A'}
                   </option>
                 ))}
               </select>
@@ -426,10 +426,13 @@ const Expenses = () => {
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>
-                    {expense.machines?.machine_type || 'N/A'} - {expense.machines?.machine_number || 'N/A'}
+                    {expense.machines?.machine_owners?.name || 'N/A'}
                   </div>
                   <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                     Driver: {expense.machines?.driver_name || 'N/A'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                    {expense.machines?.machine_type || 'N/A'} - {expense.machines?.machine_number || 'N/A'}
                   </div>
                 </div>
               </div>

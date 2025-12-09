@@ -12,50 +12,77 @@ const Dashboard = () => {
   const [selectedVillage, setSelectedVillage] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
+  // Helper function to convert decimal hours to HH:MM format
+  const formatHoursToHHMM = (decimalHours) => {
+    const hours = Math.floor(decimalHours);
+    const minutes = Math.round((decimalHours - hours) * 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Helper function to format numbers in Indian numbering system (lakhs format)
+  const formatIndianCurrency = (number) => {
+    if (number === 0 || number === null || number === undefined) return '0';
+    
+    const numStr = Math.round(number).toString();
+    const lastThree = numStr.substring(numStr.length - 3);
+    const otherNumbers = numStr.substring(0, numStr.length - 3);
+    
+    if (otherNumbers !== '') {
+      return otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+    }
+    return lastThree;
+  };
+
   const fetchMachines = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const API_URL = process.env.REACT_APP_API_URL || 'https://munagala-harvestors-52ow7o5s9.vercel.app';
       const response = await fetch(`${API_URL}/api/machines`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (!response.ok) {
+        throw new Error(`Machines API failed: ${response.status}`);
+      }
       const data = await response.json();
-      setMachines(data);
+      setMachines(data || []);
     } catch (error) {
       console.error('Error fetching machines:', error);
+      setMachines([]);
     }
   };
 
   const fetchVillages = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const API_URL = process.env.REACT_APP_API_URL || 'https://munagala-harvestors-52ow7o5s9.vercel.app';
       
       // Fetch farmer villages
       const farmersResponse = await fetch(`${API_URL}/api/farmers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (!farmersResponse.ok) {
+        throw new Error(`Farmers API failed: ${farmersResponse.status}`);
+      }
       const farmersData = await farmersResponse.json();
-      const farmerVillages = farmersData.map(f => f.village).filter(Boolean);
-      console.log('Farmer villages:', farmerVillages);
+      const farmerVillages = (farmersData || []).map(f => f.village).filter(Boolean);
       
       // Fetch dealer villages
       const dealersResponse = await fetch(`${API_URL}/api/dealers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (!dealersResponse.ok) {
+        throw new Error(`Dealers API failed: ${dealersResponse.status}`);
+      }
       const dealersData = await dealersResponse.json();
-      console.log('Dealers data:', dealersData);
-      console.log('First dealer full data:', JSON.stringify(dealersData[0], null, 2));
-      const dealerVillages = dealersData.map(d => d.village_name).filter(Boolean);
-      console.log('Dealer villages:', dealerVillages);
+      const dealerVillages = (dealersData || []).map(d => d.village_name).filter(Boolean);
       
       // Combine and get unique villages
       const allVillages = [...farmerVillages, ...dealerVillages];
       const uniqueVillages = [...new Set(allVillages)];
-      console.log('All unique villages:', uniqueVillages);
       setVillages(uniqueVillages.sort());
     } catch (error) {
       console.error('Error fetching villages:', error);
+      setVillages([]);
     }
   };
 
@@ -66,8 +93,6 @@ const Dashboard = () => {
       if (selectedVillage) params.append('village', selectedVillage);
       const queryParam = params.toString() ? `?${params.toString()}` : '';
       const response = await dashboardAPI.getStats(queryParam);
-      console.log('Dashboard stats received:', response.data);
-      console.log('Total Machines count:', response.data?.counts?.totalMachines);
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -404,39 +429,86 @@ const Dashboard = () => {
         {activeTab === 'overview' && (
           <div className="enterprise-section">
             <div className="enterprise-grid">
+              {/* 1️⃣ Revenue */}
               <div className="enterprise-card revenue-card">
                 <div className="card-header">
                   <span className="card-icon">💰</span>
-                  <h4>Total Revenue</h4>
+                  <h4>Revenue</h4>
                 </div>
-                <div className="card-amount positive">₹{(Math.round((stats?.combined?.totalRevenue || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">From all business sections</p>
+                <div style={{ padding: '20px 24px' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>From Farmers/Dealers</div>
+                    <div className="card-amount positive">₹{formatIndianCurrency(Math.round((stats?.combined?.revenue || 0) * 100) / 100)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>To Owners</div>
+                    <div style={{ fontSize: '24px', color: '#f59e0b', fontWeight: '700' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.ownerRevenue || 0) * 100) / 100)}</div>
+                  </div>
+                </div>
                 <div className="card-footer">
-                  <span className="card-badge success">Combined Income</span>
+                  <span className="card-badge success">Total Income</span>
                 </div>
               </div>
 
+              {/* 2️⃣ Profit */}
+              <div className="enterprise-card profit-card">
+                <div className="card-header">
+                  <span className="card-icon">📊</span>
+                  <h4>Profit</h4>
+                </div>
+                <div className={`card-amount ${(stats?.combined?.profit || 0) >= 0 ? 'profit' : 'negative'}`}>
+                  ₹{formatIndianCurrency(Math.round((stats?.combined?.profit || 0) * 100) / 100)}
+                </div>
+                <p className="card-description">Revenue - (hours × owner_rate)</p>
+                <div className="card-footer">
+                  <span className="card-badge info">Net Profit</span>
+                </div>
+              </div>
+
+              {/* 3️⃣ Total Hours */}
               <div className="enterprise-card hours-card">
                 <div className="card-header">
                   <span className="card-icon">⏱️</span>
                   <h4>Total Hours</h4>
                 </div>
-                <div className="card-amount" style={{ color: '#667eea' }}>{(stats?.combined?.totalHours || 0).toLocaleString()}</div>
-                <p className="card-description">Combined work hours</p>
+                <div className="card-amount" style={{ color: '#667eea' }}>{formatHoursToHHMM(stats?.combined?.totalHours || 0)}</div>
+                <p className="card-description">SUM(hours worked)</p>
                 <div className="card-footer">
-                  <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Total Time</span>
+                  <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Work Time</span>
                 </div>
               </div>
 
-              <div className="enterprise-card profit-card">
+              {/* 4️⃣ Expenses */}
+              <div className="enterprise-card expenses-card">
                 <div className="card-header">
-                  <span className="card-icon">📊</span>
-                  <h4>Total Profit</h4>
+                  <span className="card-icon">💸</span>
+                  <h4>Expenses</h4>
                 </div>
-                <div className="card-amount profit">₹{(Math.round((stats?.combined?.totalProfit || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Combined profit margin</p>
+                <div className="card-amount" style={{ color: '#f59e0b' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.expenses || 0) * 100) / 100)}</div>
+                <p className="card-description">SUM(machine expenses)</p>
                 <div className="card-footer">
-                  <span className="card-badge info">Net Income</span>
+                  <span className="card-badge" style={{ background: '#fef3c7', color: '#92400e' }}>Total Cost</span>
+                </div>
+              </div>
+
+              {/* 5️⃣ Pending Transactions */}
+              <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: 'auto', minHeight: '200px' }}>
+                <div className="card-header">
+                  <span className="card-icon">⏳</span>
+                  <h4>Pending Transactions</h4>
+                </div>
+                <div style={{ padding: '20px 24px', flex: 1 }}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>To Receive</div>
+                    <div style={{ fontSize: '28px', color: '#10b981', fontWeight: '700', lineHeight: '1.2' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.pendingFromFarmers || 0) * 100) / 100)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>To Pay Owners</div>
+                    <div style={{ fontSize: '28px', color: '#ef4444', fontWeight: '700', lineHeight: '1.2' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.pendingToOwners || 0) * 100) / 100)}</div>
+                  </div>
+                </div>
+                <div className="card-footer">
+                  <span className="card-badge" style={{ background: '#fef2f2', color: '#991b1b' }}>Outstanding</span>
                 </div>
               </div>
             </div>
@@ -448,7 +520,7 @@ const Dashboard = () => {
                   <div className="breakdown-icon">🌾</div>
                   <div className="breakdown-details">
                     <span className="breakdown-label">Direct Harvesting</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.harvesting?.profit || 0) * 100) / 100).toLocaleString()}</span>
+                    <span className="breakdown-value">₹{formatIndianCurrency(Math.round((stats?.harvesting?.profit || 0) * 100) / 100)}</span>
                     <span className="breakdown-sublabel">Profit contribution</span>
                   </div>
                 </div>
@@ -456,7 +528,7 @@ const Dashboard = () => {
                   <div className="breakdown-icon">🏢</div>
                   <div className="breakdown-details">
                     <span className="breakdown-label">Dealer Rental System</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.dealerRentals?.totalProfit || 0) * 100) / 100).toLocaleString()}</span>
+                    <span className="breakdown-value">₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.profit || 0) * 100) / 100)}</span>
                     <span className="breakdown-sublabel">Profit contribution</span>
                   </div>
                 </div>
@@ -464,22 +536,30 @@ const Dashboard = () => {
             </div>
 
             <div className="metrics-breakdown">
-              <h4 className="subsection-title">Pending Transactions</h4>
+              <h4 className="subsection-title">Discounts Overview</h4>
               <div className="breakdown-grid">
-                <div className="breakdown-card receivable">
-                  <div className="breakdown-icon">⬇️</div>
+                <div className="breakdown-card" style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', border: '2px solid #d97706' }}>
+                  <div className="breakdown-icon">🕒</div>
                   <div className="breakdown-details">
-                    <span className="breakdown-label">To Receive (Combined)</span>
-                    <span className="breakdown-value">₹{(Math.round(((stats?.harvesting?.pendingFromFarmers || 0) + (stats?.dealerRentals?.pendingFromDealers || 0)) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">From farmers & dealers</span>
+                    <span className="breakdown-label" style={{ color: '#78350f', fontWeight: '700' }}>From Owner (Hours)</span>
+                    <span className="breakdown-value" style={{ color: '#78350f', fontWeight: '800', fontSize: '26px' }}>{formatHoursToHHMM(stats?.combined?.discountHoursFromOwners || 0)}</span>
+                    <span className="breakdown-sublabel" style={{ color: '#92400e', fontWeight: '600' }}>Discount hours given by owners</span>
                   </div>
                 </div>
-                <div className="breakdown-card payable">
-                  <div className="breakdown-icon">⬆️</div>
+                <div className="breakdown-card" style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', border: '2px solid #059669' }}>
+                  <div className="breakdown-icon">💰</div>
                   <div className="breakdown-details">
-                    <span className="breakdown-label">To Pay to Owners</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.harvesting?.totalToPayToOwners || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Total owner cost (at agreed rate)</span>
+                    <span className="breakdown-label" style={{ color: '#064e3b', fontWeight: '700' }}>Additional Profit from Owner Discount</span>
+                    <span className="breakdown-value" style={{ color: '#064e3b', fontWeight: '800', fontSize: '26px' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.additionalProfitFromOwnerDiscount || 0) * 100) / 100)}</span>
+                    <span className="breakdown-sublabel" style={{ color: '#065f46', fontWeight: '600' }}>Extra profit gained</span>
+                  </div>
+                </div>
+                <div className="breakdown-card" style={{ background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)', border: '2px solid #dc2626' }}>
+                  <div className="breakdown-icon">🎁</div>
+                  <div className="breakdown-details">
+                    <span className="breakdown-label" style={{ color: '#7f1d1d', fontWeight: '700' }}>To Farmers (Money)</span>
+                    <span className="breakdown-value" style={{ color: '#7f1d1d', fontWeight: '800', fontSize: '26px' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.discountAmountToFarmers || 0) * 100) / 100)}</span>
+                    <span className="breakdown-sublabel" style={{ color: '#991b1b', fontWeight: '600' }}>Discount money given to farmers</span>
                   </div>
                 </div>
               </div>
@@ -491,95 +571,86 @@ const Dashboard = () => {
         {activeTab === 'harvesting' && (
           <div className="enterprise-section">
             <div className="enterprise-grid">
+              {/* 1️⃣ Revenue */}
               <div className="enterprise-card revenue-card">
                 <div className="card-header">
                   <span className="card-icon">💰</span>
                   <h4>Revenue</h4>
                 </div>
-                <div className="card-amount positive">₹{(Math.round((stats?.harvesting?.totalRevenue || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Total charged to farmers</p>
+                <div style={{ padding: '20px 24px' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>From Farmers</div>
+                    <div className="card-amount positive">₹{formatIndianCurrency(Math.round((stats?.harvesting?.revenue || 0) * 100) / 100)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>To Owners</div>
+                    <div style={{ fontSize: '24px', color: '#f59e0b', fontWeight: '700' }}>₹{formatIndianCurrency(Math.round((stats?.harvesting?.ownerRevenue || 0) * 100) / 100)}</div>
+                  </div>
+                </div>
                 <div className="card-footer">
                   <span className="card-badge success">Income</span>
                 </div>
               </div>
 
+              {/* 2️⃣ Profit */}
+              <div className="enterprise-card profit-card">
+                <div className="card-header">
+                  <span className="card-icon">📊</span>
+                  <h4>Profit</h4>
+                </div>
+                <div className={`card-amount ${(stats?.harvesting?.profit || 0) >= 0 ? 'profit' : 'negative'}`}>
+                  ₹{formatIndianCurrency(Math.round((stats?.harvesting?.profit || 0) * 100) / 100)}
+                </div>
+                <p className="card-description">Revenue - (hours × owner_rate)</p>
+                <div className="card-footer">
+                  <span className="card-badge info">Net Profit</span>
+                </div>
+              </div>
+
+              {/* 3️⃣ Total Hours */}
               <div className="enterprise-card hours-card">
                 <div className="card-header">
                   <span className="card-icon">⏱️</span>
                   <h4>Total Hours</h4>
                 </div>
-                <div className="card-amount" style={{ color: '#667eea' }}>{(stats?.harvesting?.totalHours || 0).toLocaleString()}</div>
-                <p className="card-description">Hours worked in harvesting</p>
+                <div className="card-amount" style={{ color: '#667eea' }}>{formatHoursToHHMM(stats?.harvesting?.totalHours || 0)}</div>
+                <p className="card-description">SUM(hours worked)</p>
                 <div className="card-footer">
                   <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Work Time</span>
                 </div>
               </div>
 
-              <div className="enterprise-card costs-card">
+              {/* 4️⃣ Expenses */}
+              <div className="enterprise-card expenses-card">
                 <div className="card-header">
                   <span className="card-icon">💸</span>
-                  <h4>To Pay to Owners</h4>
+                  <h4>Expenses</h4>
                 </div>
-                <div className="card-amount negative">₹{(Math.round((stats?.harvesting?.totalToPayToOwners || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Total owner cost (at agreed rate)</p>
+                <div className="card-amount" style={{ color: '#f59e0b' }}>₹{formatIndianCurrency(Math.round((stats?.harvesting?.expenses || 0) * 100) / 100)}</div>
+                <p className="card-description">SUM(machine expenses)</p>
                 <div className="card-footer">
-                  <span className="card-badge danger">Expense</span>
+                  <span className="card-badge" style={{ background: '#fef3c7', color: '#92400e' }}>Total Cost</span>
                 </div>
               </div>
 
-              <div className="enterprise-card profit-card">
+              {/* 5️⃣ Pending Transactions */}
+              <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: 'auto', minHeight: '200px' }}>
                 <div className="card-header">
-                  <span className="card-icon">📈</span>
-                  <h4>Net Profit</h4>
+                  <span className="card-icon">⏳</span>
+                  <h4>Pending Transactions</h4>
                 </div>
-                <div className="card-amount profit">₹{(Math.round((stats?.harvesting?.profit || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Revenue minus costs</p>
+                <div style={{ padding: '20px 24px', flex: 1 }}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>To Receive</div>
+                    <div style={{ fontSize: '28px', color: '#10b981', fontWeight: '700', lineHeight: '1.2' }}>₹{formatIndianCurrency(Math.round((stats?.harvesting?.pendingFromFarmers || 0) * 100) / 100)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>To Pay Owners</div>
+                    <div style={{ fontSize: '28px', color: '#ef4444', fontWeight: '700', lineHeight: '1.2' }}>₹{formatIndianCurrency(Math.round((stats?.harvesting?.pendingToOwners || 0) * 100) / 100)}</div>
+                  </div>
+                </div>
                 <div className="card-footer">
-                  <span className="card-badge info">Net Income</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="metrics-breakdown">
-              <h4 className="subsection-title">Discount Summary</h4>
-              <div className="breakdown-grid">
-                <div className="breakdown-card receivable">
-                  <div className="breakdown-icon">✅</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">Discounts from Owners</span>
-                    <span className="breakdown-value" style={{color: '#10b981'}}>₹{(Math.round((stats?.harvesting?.totalDiscountsFromOwners || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Savings on payments to owners</span>
-                  </div>
-                </div>
-                <div className="breakdown-card payable">
-                  <div className="breakdown-icon">🎁</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">Discounts to Farmers</span>
-                    <span className="breakdown-value" style={{color: '#ef4444'}}>₹{(Math.round((stats?.harvesting?.totalDiscountsToFarmers || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Revenue reduction for farmers</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="metrics-breakdown">
-              <h4 className="subsection-title">Pending Transactions</h4>
-              <div className="breakdown-grid">
-                <div className="breakdown-card receivable">
-                  <div className="breakdown-icon">⬇️</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">To Receive from Farmers</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.harvesting?.pendingFromFarmers || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Accounts receivable</span>
-                  </div>
-                </div>
-                <div className="breakdown-card payable">
-                  <div className="breakdown-icon">⬆️</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">To Pay to Owners</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.harvesting?.pendingToOwners || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Accounts payable</span>
-                  </div>
+                  <span className="card-badge" style={{ background: '#fef2f2', color: '#991b1b' }}>Outstanding</span>
                 </div>
               </div>
             </div>
@@ -590,112 +661,86 @@ const Dashboard = () => {
         {activeTab === 'dealer' && (
           <div className="enterprise-section">
             <div className="enterprise-grid">
+              {/* 1️⃣ Revenue */}
               <div className="enterprise-card revenue-card">
                 <div className="card-header">
                   <span className="card-icon">💰</span>
-                  <h4>Revenue from Dealers</h4>
+                  <h4>Revenue</h4>
                 </div>
-                <div className="card-amount positive">₹{(Math.round((stats?.dealerRentals?.totalRevenue || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Total charged to dealers</p>
+                <div style={{ padding: '20px 24px' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>From Dealers</div>
+                    <div className="card-amount positive">₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.revenue || 0) * 100) / 100)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>To Owners</div>
+                    <div style={{ fontSize: '24px', color: '#f59e0b', fontWeight: '700' }}>₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.ownerRevenue || 0) * 100) / 100)}</div>
+                  </div>
+                </div>
                 <div className="card-footer">
                   <span className="card-badge success">Income</span>
                 </div>
               </div>
 
+              {/* 2️⃣ Profit */}
+              <div className="enterprise-card profit-card">
+                <div className="card-header">
+                  <span className="card-icon">📊</span>
+                  <h4>Profit</h4>
+                </div>
+                <div className={`card-amount ${(stats?.dealerRentals?.profit || 0) >= 0 ? 'profit' : 'negative'}`}>
+                  ₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.profit || 0) * 100) / 100)}
+                </div>
+                <p className="card-description">Revenue - Owner Cost</p>
+                <div className="card-footer">
+                  <span className="card-badge info">Commission</span>
+                </div>
+              </div>
+
+              {/* 3️⃣ Total Hours */}
               <div className="enterprise-card hours-card">
                 <div className="card-header">
                   <span className="card-icon">⏱️</span>
-                  <h4>Rental Hours</h4>
+                  <h4>Total Hours</h4>
                 </div>
-                <div className="card-amount" style={{ color: '#667eea' }}>{(stats?.dealerRentals?.totalHours || 0).toLocaleString()}</div>
-                <p className="card-description">Hours rented to dealers</p>
+                <div className="card-amount" style={{ color: '#667eea' }}>{formatHoursToHHMM(stats?.dealerRentals?.totalHours || 0)}</div>
+                <p className="card-description">SUM(rental hours)</p>
                 <div className="card-footer">
                   <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Rental Time</span>
                 </div>
               </div>
 
-              <div className="enterprise-card costs-card">
+              {/* 4️⃣ Expenses */}
+              <div className="enterprise-card expenses-card">
                 <div className="card-header">
                   <span className="card-icon">💸</span>
-                  <h4>Owner Cost</h4>
+                  <h4>Expenses</h4>
                 </div>
-                <p className="card-description">Total charged to dealers</p>
+                <div className="card-amount" style={{ color: '#f59e0b' }}>₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.expenses || 0) * 100) / 100)}</div>
+                <p className="card-description">Rental-specific expenses</p>
                 <div className="card-footer">
-                  <span className="card-badge success">Income</span>
+                  <span className="card-badge" style={{ background: '#fef3c7', color: '#92400e' }}>Total Cost</span>
                 </div>
               </div>
 
-              <div className="enterprise-card costs-card">
+              {/* 5️⃣ Pending Transactions */}
+              <div className="enterprise-card" style={{ display: 'flex', flexDirection: 'column', height: 'auto', minHeight: '200px' }}>
                 <div className="card-header">
-                  <span className="card-icon">💸</span>
-                  <h4>Cost to Owners</h4>
+                  <span className="card-icon">⏳</span>
+                  <h4>Pending Transactions</h4>
                 </div>
-                <div className="card-amount negative">₹{(Math.round((stats?.dealerRentals?.totalOwnerCost || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Total to pay owners</p>
+                <div style={{ padding: '20px 24px', flex: 1 }}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>To Receive</div>
+                    <div style={{ fontSize: '28px', color: '#10b981', fontWeight: '700', lineHeight: '1.2' }}>₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.pendingFromDealers || 0) * 100) / 100)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>To Pay Owners</div>
+                    <div style={{ fontSize: '28px', color: '#ef4444', fontWeight: '700', lineHeight: '1.2' }}>₹{formatIndianCurrency(Math.round((stats?.dealerRentals?.pendingToOwners || 0) * 100) / 100)}</div>
+                  </div>
+                </div>
                 <div className="card-footer">
-                  <span className="card-badge danger">Expense</span>
-                </div>
-              </div>
-
-              <div className="enterprise-card profit-card">
-                <div className="card-header">
-                  <span className="card-icon">📊</span>
-                  <h4>Commission Earned</h4>
-                </div>
-                <div className="card-amount profit">₹{(Math.round((stats?.dealerRentals?.totalProfit || 0) * 100) / 100).toLocaleString()}</div>
-                <p className="card-description">Total commission profit</p>
-                <div className="card-footer">
-                  <span className="card-badge info">Net Income</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="metrics-breakdown">
-              <h4 className="subsection-title">Billing Status</h4>
-              <div className="breakdown-grid">
-                <div className="breakdown-card payable">
-                  <div className="breakdown-icon">⬆️</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">To Pay to Owners</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.dealerRentals?.pendingToOwners || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Accounts payable</span>
-                  </div>
-                </div>
-                <div className="breakdown-card receivable">
-                  <div className="breakdown-icon">⬇️</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">Pending from Dealers</span>
-                    <span className="breakdown-value">₹{(Math.round((stats?.dealerRentals?.pendingFromDealers || 0) * 100) / 100).toLocaleString()}</span>
-                    <span className="breakdown-sublabel">Accounts receivable</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="metrics-breakdown">
-              <h4 className="subsection-title">Operational Metrics</h4>
-              <div className="breakdown-grid">
-                <div className="breakdown-card">
-                  <div className="breakdown-icon">🚜</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">Total Rentals</span>
-                    <span className="breakdown-value">{stats?.counts?.totalRentals || 0}</span>
-                    <span className="breakdown-sublabel">All time rentals</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="metrics-breakdown">
-              <h4 className="subsection-title">Dealer Information</h4>
-              <div className="breakdown-grid">
-                <div className="breakdown-card">
-                  <div className="breakdown-icon">🏢</div>
-                  <div className="breakdown-details">
-                    <span className="breakdown-label">Total Dealers</span>
-                    <span className="breakdown-value">{stats?.counts?.totalDealers || 0}</span>
-                    <span className="breakdown-sublabel">Active partnerships</span>
-                  </div>
+                  <span className="card-badge" style={{ background: '#fef2f2', color: '#991b1b' }}>Outstanding</span>
                 </div>
               </div>
             </div>

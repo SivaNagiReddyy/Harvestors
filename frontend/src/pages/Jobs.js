@@ -3,6 +3,7 @@ import { jobAPI, farmerAPI, machineAPI } from '../api';
 import { FaPlus, FaFileExport, FaTimes, FaTractor, FaUserAlt, FaHome, FaClock, FaEdit, FaTrash, FaCalendarAlt, FaEllipsisV, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import ActionsCell from '../components/ActionsCell';
 import FilterBar from '../components/FilterBar';
+import SearchableDropdown from '../components/SearchableDropdown';
 import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
 const Jobs = () => {
@@ -19,9 +20,16 @@ const Jobs = () => {
     hours: '',
     ratePerHour: '',
     advanceFromFarmer: '',
+    discountAmountToFarmer: '',
     status: 'Completed',
     notes: ''
   });
+
+  // Searchable dropdown states
+  const [farmerSearch, setFarmerSearch] = useState('');
+  const [showFarmerDropdown, setShowFarmerDropdown] = useState(false);
+  const [machineSearch, setMachineSearch] = useState('');
+  const [showMachineDropdown, setShowMachineDropdown] = useState(false);
 
   // Filter states
   const [filterMachine, setFilterMachine] = useState('');
@@ -36,6 +44,21 @@ const Jobs = () => {
     fetchFarmers();
     fetchMachines();
   }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.form-group')) {
+        setShowFarmerDropdown(false);
+        setShowMachineDropdown(false);
+      }
+    };
+    
+    if (showFarmerDropdown || showMachineDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showFarmerDropdown, showMachineDropdown]);
 
   const fetchJobs = async () => {
     try {
@@ -117,9 +140,21 @@ const Jobs = () => {
       hours: job.hours || '',
       ratePerHour: job.rate_per_hour || '',
       advanceFromFarmer: job.advance_from_farmer || '',
+      discountAmountToFarmer: job.discount_amount_to_farmer || '',
       status: job.status || 'Completed',
       notes: job.notes || ''
     });
+    
+    // Set search text to show selected farmer/machine names
+    const selectedFarmer = farmers.find(f => f.id === job.farmer_id);
+    const selectedMachine = machines.find(m => m.id === job.machine_id);
+    if (selectedFarmer) {
+      setFarmerSearch(`${selectedFarmer.name} - ${selectedFarmer.village}`);
+    }
+    if (selectedMachine) {
+      setMachineSearch(`${selectedMachine.machine_owners?.name || 'Unknown'} + ${selectedMachine.driver_name || 'No Driver'}`);
+    }
+    
     setShowModal(true);
   };
 
@@ -133,9 +168,15 @@ const Jobs = () => {
       hours: '',
       ratePerHour: '',
       advanceFromFarmer: '',
+      discountAmountToFarmer: '',
       status: 'Completed',
       notes: ''
     });
+    // Reset search states
+    setFarmerSearch('');
+    setMachineSearch('');
+    setShowFarmerDropdown(false);
+    setShowMachineDropdown(false);
   };
 
   // Get unique villages from farmers
@@ -368,27 +409,15 @@ const Jobs = () => {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
                   <FaTractor style={{ color: '#667eea', fontSize: '12px' }} /> Machine
                 </label>
-                <select 
+                <SearchableDropdown
+                  options={machines}
                   value={filterMachine}
-                  onChange={(e) => setFilterMachine(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(100, 116, 139, 0.3)',
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    color: '#e2e8f0',
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="">All Machines</option>
-                  {machines.map((machine) => (
-                    <option key={machine.id} value={machine.id}>
-                      {machine.machine_type} - {machine.machine_number}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFilterMachine}
+                  placeholder="Search machines..."
+                  displayKey={(machine) => `${machine.machine_owners?.name || 'N/A'} + ${machine.driver_name || 'N/A'}`}
+                  valueKey="id"
+                  allOptionLabel="All Machines"
+                />
               </div>
 
               {/* Farmer Filter */}
@@ -396,27 +425,15 @@ const Jobs = () => {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
                   <FaUserAlt style={{ color: '#28a745', fontSize: '12px' }} /> Farmer
                 </label>
-                <select 
+                <SearchableDropdown
+                  options={farmers}
                   value={filterFarmer}
-                  onChange={(e) => setFilterFarmer(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(100, 116, 139, 0.3)',
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    color: '#e2e8f0',
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="">All Farmers</option>
-                  {farmers.map((farmer) => (
-                    <option key={farmer.id} value={farmer.id}>
-                      {farmer.name} - {farmer.village}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFilterFarmer}
+                  placeholder="Search farmers..."
+                  displayKey={(farmer) => `${farmer.name} - ${farmer.village}`}
+                  valueKey="id"
+                  allOptionLabel="All Farmers"
+                />
               </div>
 
               {/* Village Filter */}
@@ -424,27 +441,13 @@ const Jobs = () => {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
                   <FaHome style={{ color: '#fd7e14', fontSize: '12px' }} /> Village
                 </label>
-                <select 
+                <SearchableDropdown
+                  options={uniqueVillages}
                   value={filterVillage}
-                  onChange={(e) => setFilterVillage(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(100, 116, 139, 0.3)',
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    color: '#e2e8f0',
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="">All Villages</option>
-                  {uniqueVillages.map((village) => (
-                    <option key={village} value={village}>
-                      {village}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFilterVillage}
+                  placeholder="Search villages..."
+                  allOptionLabel="All Villages"
+                />
               </div>
 
               {/* Status Filter */}
@@ -452,26 +455,13 @@ const Jobs = () => {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '12px', fontWeight: '500', color: '#cbd5e1' }}>
                   📊 Status
                 </label>
-                <select 
+                <SearchableDropdown
+                  options={['Scheduled', 'Completed', 'Pending Payment', 'Cancelled']}
                   value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(100, 116, 139, 0.3)',
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    color: '#e2e8f0',
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="">All Status</option>
-                  <option value="Scheduled">Scheduled</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Pending Payment">Pending Payment</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
+                  onChange={setFilterStatus}
+                  placeholder="Search status..."
+                  allOptionLabel="All Status"
+                />
               </div>
             </div>
           </div>
@@ -679,35 +669,155 @@ const Jobs = () => {
             <h2>{editingJob ? 'Edit Job' : 'Add Harvesting Job'}</h2>
             <form onSubmit={handleSubmit}>
                 <div className="form-row">
-                  <div className="form-group">
+                  <div className="form-group" style={{ position: 'relative' }}>
                     <label>Farmer (Field Owner) <span className="required-star">*</span></label>
-                    <select
-                      value={formData.farmer}
-                      onChange={(e) => setFormData({ ...formData, farmer: e.target.value })}
-                      required
-                    >
-                      <option value="">Select Farmer</option>
-                      {farmers.map((farmer) => (
-                        <option key={farmer.id} value={farmer.id}>
-                          {farmer.name} - {farmer.village}
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      value={farmerSearch}
+                      onChange={(e) => {
+                        setFarmerSearch(e.target.value);
+                        setShowFarmerDropdown(true);
+                      }}
+                      onFocus={() => setShowFarmerDropdown(true)}
+                      placeholder="Type to search farmer..."
+                      required={!formData.farmer}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '2px solid #e2e8f0',
+                        fontSize: '14px'
+                      }}
+                    />
+                    {showFarmerDropdown && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          backgroundColor: 'white',
+                          border: '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          marginTop: '4px',
+                          zIndex: 1000,
+                          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {farmers
+                          .filter(farmer => 
+                            farmer.name.toLowerCase().includes(farmerSearch.toLowerCase()) ||
+                            farmer.village.toLowerCase().includes(farmerSearch.toLowerCase())
+                          )
+                          .map((farmer) => (
+                            <div
+                              key={farmer.id}
+                              onClick={() => {
+                                setFormData({ ...formData, farmer: farmer.id });
+                                setFarmerSearch(`${farmer.name} - ${farmer.village}`);
+                                setShowFarmerDropdown(false);
+                              }}
+                              style={{
+                                padding: '10px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f1f5f9',
+                                fontSize: '14px',
+                                color: '#1e293b',
+                                backgroundColor: formData.farmer === farmer.id ? '#f0f9ff' : 'white'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f8fafc'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = formData.farmer === farmer.id ? '#f0f9ff' : 'white'}
+                            >
+                              {farmer.name} - {farmer.village}
+                            </div>
+                          ))}
+                        {farmers.filter(farmer => 
+                          farmer.name.toLowerCase().includes(farmerSearch.toLowerCase()) ||
+                          farmer.village.toLowerCase().includes(farmerSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div style={{ padding: '10px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+                            No farmers found
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ position: 'relative' }}>
                     <label>Machine <span className="required-star">*</span></label>
-                    <select
-                      value={formData.machine}
-                      onChange={(e) => handleMachineChange(e.target.value)}
-                      required
-                    >
-                      <option value="">Select Machine</option>
-                      {machines.map((machine) => (
-                        <option key={machine.id} value={machine.id}>
-                          {machine.driver_name} + {machine.machine_owners?.name}
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      value={machineSearch}
+                      onChange={(e) => {
+                        setMachineSearch(e.target.value);
+                        setShowMachineDropdown(true);
+                      }}
+                      onFocus={() => setShowMachineDropdown(true)}
+                      placeholder="Type to search machine..."
+                      required={!formData.machine}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '2px solid #e2e8f0',
+                        fontSize: '14px'
+                      }}
+                    />
+                    {showMachineDropdown && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          backgroundColor: 'white',
+                          border: '2px solid #e2e8f0',
+                          borderRadius: '8px',
+                          marginTop: '4px',
+                          zIndex: 1000,
+                          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {machines
+                          .filter(machine => 
+                            (machine.driver_name || '').toLowerCase().includes(machineSearch.toLowerCase()) ||
+                            (machine.machine_owners?.name || '').toLowerCase().includes(machineSearch.toLowerCase())
+                          )
+                          .map((machine) => (
+                            <div
+                              key={machine.id}
+                              onClick={() => {
+                                handleMachineChange(machine.id);
+                                setMachineSearch(`${machine.machine_owners?.name || 'Unknown'} + ${machine.driver_name || 'No Driver'}`);
+                                setShowMachineDropdown(false);
+                              }}
+                              style={{
+                                padding: '10px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f1f5f9',
+                                fontSize: '14px',
+                                color: '#1e293b',
+                                backgroundColor: formData.machine === machine.id ? '#f0f9ff' : 'white'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f8fafc'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = formData.machine === machine.id ? '#f0f9ff' : 'white'}
+                            >
+                              {machine.machine_owners?.name || 'Unknown'} + {machine.driver_name || 'No Driver'}
+                            </div>
+                          ))}
+                        {machines.filter(machine => 
+                          (machine.driver_name || '').toLowerCase().includes(machineSearch.toLowerCase()) ||
+                          (machine.machine_owners?.name || '').toLowerCase().includes(machineSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div style={{ padding: '10px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+                            No machines found
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="form-row">
@@ -790,6 +900,28 @@ const Jobs = () => {
                       min="0"
                       step="0.01"
                     />
+                  </div>
+                </div>
+                
+                {/* Discount Section */}
+                <div style={{ padding: '20px', backgroundColor: '#fef3c7', borderRadius: '12px', marginBottom: '20px', border: '3px solid #f59e0b', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                  <h4 style={{ margin: '0 0 16px 0', color: '#78350f', fontSize: '18px', fontWeight: '700', textAlign: 'center', borderBottom: '2px solid #f59e0b', paddingBottom: '8px' }}>
+                    🎁 Discount to Farmer
+                  </h4>
+                  <div className="form-group">
+                    <label style={{ fontWeight: '600', color: '#78350f', fontSize: '15px' }}>Discount Amount (₹)</label>
+                    <input
+                      type="number"
+                      value={formData.discountAmountToFarmer || ''}
+                      onChange={(e) => setFormData({ ...formData, discountAmountToFarmer: e.target.value })}
+                      placeholder="Money discount to this farmer"
+                      min="0"
+                      step="100"
+                      style={{ borderColor: '#f59e0b', borderWidth: '2px' }}
+                    />
+                    <small style={{ color: '#92400e', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+                      💡 You give discount to farmer in money (reduces farmer's pending amount for this job)
+                    </small>
                   </div>
                 </div>
                 

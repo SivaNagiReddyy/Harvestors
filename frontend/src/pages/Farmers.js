@@ -36,6 +36,34 @@ const Farmers = () => {
     fetchPayments();
   }, []);
 
+  useEffect(() => {
+    // Initialize villages from localStorage or set defaults
+    const savedVillages = localStorage.getItem('villages');
+    if (savedVillages) {
+      setVillages(JSON.parse(savedVillages));
+    } else {
+      // Default villages - can be customized
+      const defaultVillages = ['Maseedupuram', 'Ayyalur', 'Shamsulla', 'Munagala'];
+      setVillages(defaultVillages);
+      localStorage.setItem('villages', JSON.stringify(defaultVillages));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Extract unique villages from existing farmers
+    if (farmers.length > 0) {
+      const existingVillages = [...new Set(farmers.map(f => f.village).filter(Boolean))];
+      const savedVillages = JSON.parse(localStorage.getItem('villages') || '[]');
+      
+      // Merge existing villages with saved villages
+      const mergedVillages = [...new Set([...savedVillages, ...existingVillages])];
+      if (mergedVillages.length > savedVillages.length) {
+        setVillages(mergedVillages.sort());
+        localStorage.setItem('villages', JSON.stringify(mergedVillages));
+      }
+    }
+  }, [farmers]);
+
   const fetchFarmers = async () => {
     try {
       const response = await farmerAPI.getAll();
@@ -148,14 +176,6 @@ const Farmers = () => {
       }
     }
   };
-
-  // Load villages from localStorage on mount
-  useEffect(() => {
-    const savedVillages = localStorage.getItem('villages');
-    if (savedVillages) {
-      setVillages(JSON.parse(savedVillages));
-    }
-  }, []);
 
   // Get unique villages from farmers
   const uniqueVillages = [...new Set(farmers.map(f => f.village).filter(Boolean))];

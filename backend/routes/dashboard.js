@@ -25,6 +25,7 @@ router.get('/stats', auth, async (req, res) => {
     if (machinesError) {
       console.error('❌ Error fetching machines:', machinesError);
       console.error('Error details:', JSON.stringify(machinesError, null, 2));
+      throw new Error('Failed to fetch machines: ' + machinesError.message);
     } else {
       console.log('✅ Machines data fetched successfully');
       console.log('Number of machines:', allMachines?.length);
@@ -82,8 +83,7 @@ router.get('/stats', auth, async (req, res) => {
         hours,
         rate_per_hour,
         advance_from_farmer,
-        discount_to_farmer,
-        net_amount_from_farmer,
+        discount_amount_to_farmer,
         farmers!inner(village)
       `);
     if (machine_id) {
@@ -112,6 +112,10 @@ router.get('/stats', auth, async (req, res) => {
     allJobsWithPayments?.forEach(job => {
       const jobAmount = parseFloat(job.total_amount) || (parseFloat(job.hours || 0) * parseFloat(job.rate_per_hour || 0));
       const advance = parseFloat(job.advance_from_farmer || 0);
+      const farmerDiscount = parseFloat(job.discount_amount_to_farmer || 0);
+      
+      // Amount farmer owes after discount
+      const farmerOwesAmount = jobAmount - farmerDiscount;
       
       // Sum up all payments for this job
       const paymentsForJob = farmerPayments?.filter(p => p.job_id === job.id || p.farmer_id === job.farmer_id)
@@ -119,7 +123,7 @@ router.get('/stats', auth, async (req, res) => {
       
       const totalPaid = advance + paymentsForJob;
       
-      if (totalPaid >= jobAmount) {
+      if (totalPaid >= farmerOwesAmount) {
         completedJobsCount++;
       } else {
         pendingJobsCount++;
@@ -160,9 +164,9 @@ router.get('/stats', auth, async (req, res) => {
       totalAlreadyPaidToOwners
     });
 
-    // Calculate Total Revenue from all jobs (not just payments received)
-    // Revenue and profit use GROSS (no discounts)
-    let revenueQuery = supabase.from('harvesting_jobs').select('total_amount, hours, rate_per_hour, farmers!inner(village)');
+    // Calculate Total Revenue from all jobs
+    // IMPORTANT: Calculate revenue as hours × rate_per_hour (not stored total_amount which may be rounded)
+    let revenueQuery = supabase.from('harvesting_jobs').select('machine_id, hours, rate_per_hour, discount_amount_to_farmer, farmers!inner(village)');
     if (machine_id) {
       revenueQuery = revenueQuery.eq('machine_id', machine_id);
     }
@@ -172,7 +176,7 @@ router.get('/stats', auth, async (req, res) => {
     const { data: allJobsForRevenue } = await revenueQuery;
 
     const totalRevenue = parseFloat((allJobsForRevenue?.reduce((sum, job) => {
-      const grossAmount = parseFloat(job.total_amount) || (parseFloat(job.hours || 0) * parseFloat(job.rate_per_hour || 0));
+      const grossAmount = parseFloat(job.hours || 0) * parseFloat(job.rate_per_hour || 0);
       return sum + grossAmount;
     }, 0) || 0).toFixed(2));
 
@@ -180,6 +184,7 @@ router.get('/stats', auth, async (req, res) => {
     const totalHours = parseFloat((allJobsForRevenue?.reduce((sum, job) => {
       return sum + parseFloat(job.hours || 0);
     }, 0) || 0).toFixed(2));
+    
     console.log('Dashboard - Total Hours:', { totalHours, sampleHours: allJobsForRevenue?.[0]?.hours });
 
 
@@ -192,11 +197,8 @@ router.get('/stats', auth, async (req, res) => {
         total_amount,
         hours,
         rate_per_hour,
-        discount_from_owner,
-        discount_to_farmer,
-        net_amount_to_owner,
-        net_amount_from_farmer,
-        machines!inner(id, machine_owner_id, owner_rate_per_hour),
+        discount_amount_to_farmer,
+        machines!inner(id, machine_owner_id, owner_rate_per_hour, discount_hours),
         farmers!inner(village)
       `);
     if (machine_id) {
@@ -210,6 +212,14 @@ router.get('/stats', auth, async (req, res) => {
     if (jobsError) {
       console.error('❌ Error fetching jobs for dashboard:', jobsError);
     }
+    
+    // Calculate total owner cost (hours × owner_rate) for display in Revenue card
+    // NOW we can use allJobs since it's been fetched
+    const totalOwnerRevenueFromJobs = parseFloat((allJobs?.reduce((sum, job) => {
+      const hours = parseFloat(job.hours || 0);
+      const ownerRate = parseFloat(job.machines?.owner_rate_per_hour || 0);
+      return sum + (hours * ownerRate);
+    }, 0) || 0).toFixed(2));
 
     console.log('Dashboard - All Jobs for owner calculation:', {
       totalJobs: allJobs?.length,
@@ -254,12 +264,13 @@ router.get('/stats', auth, async (req, res) => {
     });
 
     // STEP 1: Calculate total earnings from DIRECT HARVESTING JOBS
-    // Calculate based on: hours × owner_rate_per_hour (from machines table)
-    // This matches the Machine Owners page calculation
+    // Calculate based on: hours × owner_rate_per_hour (discount applied at machine level, not per job)
     const ownerEarningsFromJobs = {};
+    const machineHoursWorked = {}; // Track total hours per machine
     
     allJobs?.forEach(job => {
       const ownerId = job.machines?.machine_owner_id;
+      const machineId = job.machines?.id;
       const hours = parseFloat(job.hours || 0);
       // Get owner rate from the machines table (current rate)
       const ownerRate = parseFloat(job.machines?.owner_rate_per_hour || 0);
@@ -267,6 +278,46 @@ router.get('/stats', auth, async (req, res) => {
       
       if (ownerId && earnings > 0) {
         ownerEarningsFromJobs[ownerId] = parseFloat(((ownerEarningsFromJobs[ownerId] || 0) + earnings).toFixed(2));
+      }
+      
+      // Track hours per machine for discount calculation
+      if (machineId) {
+        machineHoursWorked[machineId] = parseFloat(((machineHoursWorked[machineId] || 0) + hours).toFixed(2));
+      }
+    });
+    
+    // Calculate TOTAL what we owe owners WITHOUT discounts (for Direct Harvesting display)
+    const totalToPayToOwnersWithoutDiscounts = parseFloat((Object.values(ownerEarningsFromJobs).reduce((sum, val) => sum + val, 0)).toFixed(2));
+    
+    // Now apply machine-level discount hours to reduce owner payment FOR COMBINED VIEW ONLY
+    // Get all machines with their discount hours
+    let machinesWithDiscountQuery = supabase.from('machines').select('id, machine_owner_id, owner_rate_per_hour, discount_hours');
+    if (machine_id) {
+      machinesWithDiscountQuery = machinesWithDiscountQuery.eq('id', machine_id);
+    }
+    const { data: machinesWithDiscount } = await machinesWithDiscountQuery;
+    
+    // Calculate total discount hours and reduction in owner payment
+    let totalDiscountHours = 0;
+    let totalOwnerDiscountReduction = 0;
+    
+    // Create a copy for combined view calculations
+    const ownerEarningsWithDiscounts = { ...ownerEarningsFromJobs };
+    
+    machinesWithDiscount?.forEach(machine => {
+      const discountHours = parseFloat(machine.discount_hours || 0);
+      const ownerRate = parseFloat(machine.owner_rate_per_hour || 0);
+      const ownerId = machine.machine_owner_id;
+      
+      if (discountHours > 0 && ownerId) {
+        totalDiscountHours += discountHours;
+        const reduction = discountHours * ownerRate;
+        totalOwnerDiscountReduction += reduction;
+        
+        // Reduce owner's earnings by discount amount (only for combined view)
+        if (ownerEarningsWithDiscounts[ownerId]) {
+          ownerEarningsWithDiscounts[ownerId] = parseFloat((ownerEarningsWithDiscounts[ownerId] - reduction).toFixed(2));
+        }
       }
     });
 
@@ -328,50 +379,51 @@ router.get('/stats', auth, async (req, res) => {
     });
 
     // STEP 5: Calculate TOTAL TO PAY for HARVESTING ONLY (jobs only, no rentals)
-    let totalToPayToOwners = 0;
+    // For Direct Harvesting view: use earnings WITHOUT discounts
+    let totalToPayToOwnersForHarvesting = totalToPayToOwnersWithoutDiscounts;
     let totalAlreadyPaid = 0;
     
     Object.keys(ownerEarningsFromJobs).forEach(ownerId => {
-      const earned = ownerEarningsFromJobs[ownerId] || 0;
       const paid = ownerPaidAmounts[ownerId] || 0;
-      totalToPayToOwners += earned;
       totalAlreadyPaid += paid;
     });
 
-    totalToPayToOwners = parseFloat(totalToPayToOwners.toFixed(2));
     totalAlreadyPaid = parseFloat(totalAlreadyPaid.toFixed(2));
-    const pendingToOwners = parseFloat((totalToPayToOwners - totalAlreadyPaid).toFixed(2));
+    const pendingToOwnersForHarvesting = parseFloat((totalToPayToOwnersForHarvesting - totalAlreadyPaid).toFixed(2));
+
+    // For Combined view: use earnings WITH discounts
+    const totalToPayToOwnersWithDiscountsForCombined = parseFloat((Object.values(ownerEarningsWithDiscounts).reduce((sum, val) => sum + val, 0)).toFixed(2));
+    const pendingToOwnersForCombined = parseFloat((totalToPayToOwnersWithDiscountsForCombined - totalAlreadyPaid).toFixed(2));
 
     console.log('Dashboard - Owner Payment Calculation (HARVESTING ONLY):', {
       ownerEarningsFromJobs,
       ownerPaidAmounts,
-      totalToPayToOwners,
+      totalToPayToOwnersForHarvesting,
+      totalToPayToOwnersWithDiscountsForCombined,
       totalAlreadyPaid,
-      pendingToOwners
+      pendingToOwnersForHarvesting,
+      pendingToOwnersForCombined
     });
 
     console.log('Dashboard - Rental owner earnings (separate):', {
       ownerEarningsFromRentals
     });
 
-    // Calculate pending from farmers using NET amounts (with discounts)
-    const farmerGrossTotals = {};  // For revenue calculation (no discounts)
-    const farmerNetTotals = {};    // For pending calculation (with discounts)
+    // Calculate pending from farmers using amounts after discounts
+    const farmerTotals = {};
     const farmerPaid = {};
     
     allJobsWithPayments?.forEach(job => {
       if (job.farmer_id) {
-        // Calculate GROSS amount (without discount - for revenue)
-        const grossAmount = parseFloat(job.total_amount) || (parseFloat(job.hours || 0) * parseFloat(job.rate_per_hour || 0));
-        
-        // Calculate NET amount (with discount - for pending)
-        const discount = parseFloat(job.discount_to_farmer || 0);
-        const netAmount = parseFloat(job.net_amount_from_farmer || 0) || (grossAmount - discount);
-        
+        // Calculate amount
+        const amount = parseFloat(job.total_amount) || (parseFloat(job.hours || 0) * parseFloat(job.rate_per_hour || 0));
         const advance = parseFloat(job.advance_from_farmer || 0);
+        const farmerDiscount = parseFloat(job.discount_amount_to_farmer || 0);
         
-        farmerGrossTotals[job.farmer_id] = parseFloat(((farmerGrossTotals[job.farmer_id] || 0) + grossAmount).toFixed(2));
-        farmerNetTotals[job.farmer_id] = parseFloat(((farmerNetTotals[job.farmer_id] || 0) + netAmount).toFixed(2));
+        // Farmer owes amount minus discount
+        const farmerOwesAmount = amount - farmerDiscount;
+        
+        farmerTotals[job.farmer_id] = parseFloat(((farmerTotals[job.farmer_id] || 0) + farmerOwesAmount).toFixed(2));
         farmerPaid[job.farmer_id] = parseFloat(((farmerPaid[job.farmer_id] || 0) + advance).toFixed(2));
       }
     });
@@ -383,20 +435,18 @@ router.get('/stats', auth, async (req, res) => {
       }
     });
 
-    // Calculate pending from farmers using NET amounts (with discounts)
+    // Calculate pending from farmers
     let pendingFromFarmers = 0;
-    Object.keys(farmerNetTotals).forEach(farmerId => {
-      const total = parseFloat((farmerNetTotals[farmerId] || 0).toFixed(2));
+    Object.keys(farmerTotals).forEach(farmerId => {
+      const total = parseFloat((farmerTotals[farmerId] || 0).toFixed(2));
       const paid = parseFloat((farmerPaid[farmerId] || 0).toFixed(2));
       const pending = total - paid;
-      console.log(`Farmer ${farmerId}: total(net)=₹${total}, paid=₹${paid}, pending=₹${pending}`);
+      console.log(`Farmer ${farmerId}: total=₹${total}, paid=₹${paid}, pending=₹${pending}`);
       pendingFromFarmers = parseFloat((pendingFromFarmers + pending).toFixed(2));
     });
 
-    // pendingFromFarmers is now net (with discounts)
     console.log('Dashboard - Pending from Farmers calculation:', {
-      totalGrossFromFarmers: Object.values(farmerGrossTotals).reduce((a, b) => a + b, 0),
-      totalNetFromFarmers: Object.values(farmerNetTotals).reduce((a, b) => a + b, 0),
+      totalFromFarmers: Object.values(farmerTotals).reduce((a, b) => a + b, 0),
       totalPaid: Object.values(farmerPaid).reduce((a, b) => a + b, 0),
       pendingFromFarmers
     });
@@ -494,14 +544,58 @@ router.get('/stats', auth, async (req, res) => {
     // ============================================
     const combinedRevenue = parseFloat((totalRevenue + totalDealerRevenue).toFixed(2));
     
-    // Profit calculation: Revenue - What we owe to owners
-    const combinedProfit = parseFloat(((totalRevenue - totalToPayToOwners) + totalRentalProfit).toFixed(2));
+    // Calculate additional profit from owner discount (discount hours × farmer rate)
+    let additionalProfitFromOwnerDiscount = 0;
+    machinesWithDiscount?.forEach(machine => {
+      const discountHours = parseFloat(machine.discount_hours || 0);
+      // Get farmer rate by finding jobs for this machine
+      const machineJobs = allJobsForRevenue?.filter(j => j.machine_id === machine.id);
+      if (machineJobs && machineJobs.length > 0) {
+        // Use average farmer rate for this machine
+        const avgFarmerRate = machineJobs.reduce((sum, j) => sum + parseFloat(j.rate_per_hour || 0), 0) / machineJobs.length;
+        additionalProfitFromOwnerDiscount += discountHours * avgFarmerRate;
+      }
+    });
+    additionalProfitFromOwnerDiscount = parseFloat(additionalProfitFromOwnerDiscount.toFixed(2));
+
+    // Profit calculation: Revenue - What we owe to owners (already reduced by owner discount) + Extra benefit - Farmer discounts given
+    // Owner discount benefit = discount_hours × (rate_for_farmer - rate_for_owner) but we already reduced owner payment
+    // So additional profit = discount_hours × rate_for_farmer (since we still charge farmers full rate)
+    const totalFarmerDiscountsGiven = parseFloat((allJobsForRevenue?.reduce((sum, job) => 
+      sum + parseFloat(job.discount_amount_to_farmer || 0), 0) || 0).toFixed(2));
+    
+    // Calculate DIRECT profit from each job: hours × (farmer_rate - owner_rate)
+    // This gives us the exact margin per job
+    const directProfitFromJobs = parseFloat((allJobs?.reduce((sum, job) => {
+      const hours = parseFloat(job.hours || 0);
+      const farmerRate = parseFloat(job.rate_per_hour || 0);
+      const ownerRate = parseFloat(job.machines?.owner_rate_per_hour || 0);
+      const margin = hours * (farmerRate - ownerRate);
+      return sum + margin;
+    }, 0) || 0).toFixed(2));
+    
+    // Profit WITHOUT discounts (for Direct Harvesting tab)
+    const harvestingProfitWithoutDiscounts = directProfitFromJobs;
+    
+    // Profit WITH discounts (for Combined Overview tab)
+    const harvestingProfitWithDiscounts = parseFloat((directProfitFromJobs + additionalProfitFromOwnerDiscount - totalFarmerDiscountsGiven).toFixed(2));
+    const combinedProfit = parseFloat((harvestingProfitWithDiscounts + totalRentalProfit).toFixed(2));
 
     console.log('Dashboard - Final calculations:', {
       totalRevenue,
-      totalToPayToOwners,
+      totalToPayToOwnersForHarvesting,
+      totalToPayToOwnersWithDiscountsForCombined,
+      directProfitFromJobs,
+      totalDiscountHours,
+      totalOwnerDiscountReduction,
+      totalFarmerDiscountsGiven,
+      additionalProfitFromOwnerDiscount,
+      expensesTotal,
       totalAlreadyPaid,
-      pendingToOwners,
+      pendingToOwnersForHarvesting,
+      pendingToOwnersForCombined,
+      harvestingProfitWithoutDiscounts,
+      harvestingProfitWithDiscounts,
       combinedProfit
     });
 
@@ -542,26 +636,49 @@ router.get('/stats', auth, async (req, res) => {
         activeRentals: activeRentals || 0
       },
       harvesting: {
-        totalRevenue, // Total revenue from farmer jobs
-        totalHours, // Total hours worked
-        totalPaidToOwners: totalAlreadyPaid, // Total already paid to owners (payments + expenses)
-        totalToPayToOwners, // Total amount we need to pay to owners (hours × owner_rate)
-        pendingToOwners, // What we still owe to owners (totalToPayToOwners - totalAlreadyPaid)
-        pendingFromFarmers, // What farmers still owe us
-        profit: totalRevenue - totalToPayToOwners // Our profit (revenue - owner cost)
+        revenue: totalRevenue, // Revenue = SUM(hours * farmer_rate)
+        ownerRevenue: totalOwnerRevenueFromJobs, // Owner Revenue = SUM(hours * owner_rate)
+        profit: harvestingProfitWithoutDiscounts, // Profit WITHOUT discounts for Direct Harvesting tab
+        totalHours, // Total Hours = SUM(hours)
+        discountHoursFromOwners: totalDiscountHours, // Total discount hours from owners (machine-level)
+        discountAmountToFarmers: totalFarmerDiscountsGiven, // Total money discounts to farmers
+        additionalProfitFromOwnerDiscount, // Extra profit from owner discounts
+        expenses: expensesTotal, // Expenses = SUM(all machine expenses)
+        pendingFromFarmers, // To Receive From Farmers (after farmer discounts)
+        pendingToOwners: pendingToOwnersForHarvesting, // To Pay To Owners (WITHOUT discount reduction for Direct Harvesting view)
+        // Legacy fields for backward compatibility
+        totalRevenue,
+        totalPaidToOwners: totalAlreadyPaid,
+        totalToPayToOwners: totalToPayToOwnersForHarvesting
       },
       dealerRentals: {
-        totalRevenue: totalDealerRevenue, // Total charged to dealers
-        totalHours: totalRentalHours, // Total rental hours
-        totalOwnerCost: totalOwnerCost, // Total to pay owners
-        totalProfit: totalRentalProfit, // Profit from dealer rentals
-        totalPaidByDealers, // Amount received from dealers
-        pendingFromDealers, // Amount pending from dealers
-        pendingToOwners: pendingToOwnersFromRentals // Amount pending to owners from rentals
+        revenue: totalDealerRevenue, // Revenue = SUM(amount charged to dealers)
+        ownerRevenue: totalOwnerCost, // Owner Cost = SUM(cost to owners)
+        profit: totalRentalProfit, // Profit = Revenue - Owner Cost
+        totalHours: totalRentalHours, // Total Hours = SUM(rental hours)
+        expenses: 0, // Rental expenses tracked separately (if any)
+        pendingFromDealers, // To Receive From Dealers
+        pendingToOwners: pendingToOwnersFromRentals, // To Pay To Owners
+        // Legacy fields for backward compatibility
+        totalRevenue: totalDealerRevenue,
+        totalOwnerCost: totalOwnerCost,
+        totalProfit: totalRentalProfit,
+        totalPaidByDealers
       },
       combined: {
+        revenue: combinedRevenue, // Combined Revenue from both sections
+        ownerRevenue: totalOwnerRevenueFromJobs + totalOwnerCost, // Combined Owner Revenue
+        profit: combinedProfit, // Combined Profit WITH discounts
+        totalHours: totalHours + totalRentalHours, // Combined Hours
+        expenses: expensesTotal, // Combined Expenses (mainly from harvesting)
+        pendingFromFarmers: pendingFromFarmers + pendingFromDealers, // To Receive (Farmers + Dealers)
+        pendingToOwners: pendingToOwnersForCombined + pendingToOwnersFromRentals, // To Pay To Owners WITH discount reductions for Combined view
+        // Discount information (only for Combined view)
+        discountHoursFromOwners: totalDiscountHours,
+        discountAmountToFarmers: totalFarmerDiscountsGiven,
+        additionalProfitFromOwnerDiscount,
+        // Legacy fields for backward compatibility
         totalRevenue: combinedRevenue,
-        totalHours: totalHours + totalRentalHours, // Combined hours from both businesses
         totalProfit: combinedProfit
       },
       recentJobs: recentJobs || [],
@@ -576,6 +693,8 @@ router.get('/stats', auth, async (req, res) => {
     
     res.json(responseData);
   } catch (error) {
+    console.error('❌ Dashboard error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { FaTachometerAlt, FaTractor, FaSeedling, FaBriefcase, FaMoneyBillWave, FaHandHoldingUsd, FaSignOutAlt, FaMoon, FaSun, FaReceipt, FaBuilding, FaTruck, FaChevronDown, FaChevronRight, FaPercent, FaBars, FaTimes } from 'react-icons/fa';
+import { FaTachometerAlt, FaTractor, FaSeedling, FaBriefcase, FaMoneyBillWave, FaHandHoldingUsd, FaSignOutAlt, FaMoon, FaSun, FaReceipt, FaBuilding, FaTruck, FaChevronDown, FaChevronRight, FaBars, FaTimes } from 'react-icons/fa';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -62,7 +62,6 @@ const Layout = ({ children }) => {
         { path: '/jobs', icon: <FaBriefcase />, label: 'Harvesting Jobs' },
         { path: '/expenses', icon: <FaReceipt />, label: 'Daily Expenses' },
         { path: '/payments', icon: <FaMoneyBillWave />, label: 'Payments' },
-        { path: '/discounts', icon: <FaPercent />, label: 'Discounts' },
       ]
     },
     {

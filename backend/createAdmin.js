@@ -19,7 +19,7 @@ const createAdminUser = async () => {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash('Krish@143', 10);
+    const hashedPassword = await bcrypt.hash('Nagendra@143', 10);
 
     // Create admin user
     const { data: admin, error } = await supabase
@@ -37,7 +37,7 @@ const createAdminUser = async () => {
 
     console.log('✅ Admin user created successfully!');
     console.log('Username: admin');
-    console.log('Password: Krish@143');
+    console.log('Password: Nagendra@143');
     console.log('\n⚠️  Please change the password after first login!');
     
     process.exit(0);

@@ -76,6 +76,7 @@ router.post('/', auth, async (req, res) => {
         machine_type: req.body.machineType,
         machine_number: req.body.machineNumber,
         owner_rate_per_hour: req.body.ratePerHour,
+        discount_hours: req.body.discountHours || 0,
         driver_name: req.body.driverName,
         driver_phone: req.body.driverPhone,
         status: req.body.status || 'Active'
@@ -100,6 +101,7 @@ router.put('/:id', auth, async (req, res) => {
         machine_type: req.body.machineType,
         machine_number: req.body.machineNumber,
         owner_rate_per_hour: req.body.ratePerHour,
+        discount_hours: req.body.discountHours !== undefined ? req.body.discountHours : 0,
         driver_name: req.body.driverName,
         driver_phone: req.body.driverPhone,
         status: req.body.status

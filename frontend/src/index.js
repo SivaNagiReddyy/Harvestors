@@ -5,7 +5,7 @@ import App from './App';
 import axios from 'axios';
 
 // Configure axios defaults for the entire app
-const API_URL = process.env.REACT_APP_API_URL || 'https://munagala-harvestors-ne60no599.vercel.app';
+const API_URL = process.env.REACT_APP_API_URL || 'https://munagala-harvestors-52ow7o5s9.vercel.app';
 axios.defaults.baseURL = `${API_URL}/api`;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

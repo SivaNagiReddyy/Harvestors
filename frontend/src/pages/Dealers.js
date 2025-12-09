@@ -48,15 +48,29 @@ const Dealers = () => {
 
   const fetchVillages = async () => {
     try {
+      // Initialize from localStorage or defaults
+      const savedVillages = localStorage.getItem('dealerVillages');
+      const defaultVillages = ['MASEEDUPURAM', 'AYYALUR', 'SHAMSULLA', 'MUNAGALA'];
+      
       const token = localStorage.getItem('token');
       // Get unique villages from dealers
       const response = await axios.get(`/dealers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const uniqueVillages = [...new Set(response.data.map(d => d.village_name).filter(Boolean))];
-      setVillages(uniqueVillages.sort());
+      const existingVillages = [...new Set(response.data.map(d => d.village_name).filter(Boolean))];
+      
+      // Merge saved, default, and existing villages
+      const initialVillages = savedVillages ? JSON.parse(savedVillages) : defaultVillages;
+      const mergedVillages = [...new Set([...initialVillages, ...existingVillages])];
+      
+      setVillages(mergedVillages.sort());
+      localStorage.setItem('dealerVillages', JSON.stringify(mergedVillages));
     } catch (error) {
       console.error('Error fetching villages:', error);
+      // Set defaults on error
+      const defaultVillages = ['MASEEDUPURAM', 'AYYALUR', 'SHAMSULLA', 'MUNAGALA'];
+      setVillages(defaultVillages);
+      localStorage.setItem('dealerVillages', JSON.stringify(defaultVillages));
     }
   };
 
@@ -64,7 +78,9 @@ const Dealers = () => {
     if (newVillage.trim()) {
       const upperCaseVillage = newVillage.trim().toUpperCase();
       if (!villages.includes(upperCaseVillage)) {
-        setVillages([...villages, upperCaseVillage].sort());
+        const updatedVillages = [...villages, upperCaseVillage].sort();
+        setVillages(updatedVillages);
+        localStorage.setItem('dealerVillages', JSON.stringify(updatedVillages));
       }
       setFormData({ ...formData, village_name: upperCaseVillage });
       setNewVillage('');

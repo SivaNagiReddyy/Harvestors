@@ -12,7 +12,6 @@ import Fields from './pages/Fields';
 import Jobs from './pages/Jobs';
 import Expenses from './pages/Expenses';
 import Payments from './pages/Payments';
-import Discounts from './pages/Discounts';
 import Dealers from './pages/Dealers';
 import MachineRentals from './pages/MachineRentals';
 import RentalPayments from './pages/RentalPayments';
@@ -44,7 +43,6 @@ function App() {
                     <Route path="/jobs" element={<Jobs />} />
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/payments" element={<Payments />} />
-                    <Route path="/discounts" element={<Discounts />} />
                     <Route path="/dealers" element={<Dealers />} />
                     <Route path="/machine-rentals" element={<MachineRentals />} />
                     <Route path="/rental-payments" element={<RentalPayments />} />

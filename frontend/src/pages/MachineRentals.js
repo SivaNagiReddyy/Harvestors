@@ -5,6 +5,14 @@ import ActionsCell from '../components/ActionsCell';
 import '../index.css';
 import { exportToCSV, formatDataForExport } from '../utils/exportUtils';
 
+// Helper function to convert decimal hours to "XXh XXm" format
+const formatHoursToHHMM = (decimalHours) => {
+  const totalMinutes = Math.round(decimalHours * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}m`;
+};
+
 const MachineRentals = () => {
   const [rentals, setRentals] = useState([]);
   const [dealers, setDealers] = useState([]);
@@ -510,7 +518,7 @@ const MachineRentals = () => {
                     Hours
                   </div>
                   <div style={{ fontSize: '14px', color: '#3b82f6', fontWeight: '600' }}>
-                    {rental.total_hours_used || 0} hrs
+                    {formatHoursToHHMM(rental.total_hours_used || 0)}
                   </div>
                 </div>
               </div>
@@ -867,7 +875,7 @@ const MachineRentals = () => {
                 </div>
                 <div className="detail-row">
                   <span className="label">Total Hours:</span>
-                  <span className="value"><strong>{selectedRental.total_hours_used || 0} hours</strong></span>
+                  <span className="value"><strong>{formatHoursToHHMM(selectedRental.total_hours_used || 0)}</strong></span>
                 </div>
                 <div className="detail-row highlight">
                   <span className="label">Total Charged:</span>

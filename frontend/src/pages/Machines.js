@@ -25,6 +25,8 @@ const Machines = () => {
     machineType: '',
     machineNumber: '',
     ratePerHour: '',
+    discountHours: '',
+    discountMinutes: '',
     driverName: '',
     driverPhone: '',
     status: 'Active'
@@ -43,6 +45,34 @@ const Machines = () => {
     fetchRentals();
     fetchPayments();
   }, []);
+
+  useEffect(() => {
+    // Initialize machine types from localStorage or set defaults
+    const savedTypes = localStorage.getItem('machineTypes');
+    if (savedTypes) {
+      setMachineTypes(JSON.parse(savedTypes));
+    } else {
+      // Default machine types - can be customized
+      const defaultTypes = ['Chain Bandi Karthar', 'Tractor', 'Harvester', 'Combine Harvester'];
+      setMachineTypes(defaultTypes);
+      localStorage.setItem('machineTypes', JSON.stringify(defaultTypes));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Extract unique machine types from existing machines
+    if (machines.length > 0) {
+      const existingTypes = [...new Set(machines.map(m => m.machine_type).filter(Boolean))];
+      const savedTypes = JSON.parse(localStorage.getItem('machineTypes') || '[]');
+      
+      // Merge existing types with saved types
+      const mergedTypes = [...new Set([...savedTypes, ...existingTypes])];
+      if (mergedTypes.length > savedTypes.length) {
+        setMachineTypes(mergedTypes);
+        localStorage.setItem('machineTypes', JSON.stringify(mergedTypes));
+      }
+    }
+  }, [machines]);
 
   const fetchMachines = async () => {
     try {
@@ -119,10 +149,20 @@ const Machines = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Convert hours and minutes to decimal hours
+      const hours = parseFloat(formData.discountHours) || 0;
+      const minutes = parseFloat(formData.discountMinutes) || 0;
+      const totalDiscountHours = hours + (minutes / 60);
+      
+      const submitData = {
+        ...formData,
+        discountHours: totalDiscountHours.toFixed(2)
+      };
+      
       if (editingMachine) {
-        await machineAPI.update(editingMachine.id, formData);
+        await machineAPI.update(editingMachine.id, submitData);
       } else {
-        await machineAPI.create(formData);
+        await machineAPI.create(submitData);
       }
       fetchMachines();
       handleCloseModal();
@@ -144,11 +184,19 @@ const Machines = () => {
 
   const handleEdit = (machine) => {
     setEditingMachine(machine);
+    
+    // Split discount hours into hours and minutes
+    const totalDiscountHours = parseFloat(machine.discount_hours) || 0;
+    const hours = Math.floor(totalDiscountHours);
+    const minutes = Math.round((totalDiscountHours - hours) * 60);
+    
     setFormData({
       machineOwnerId: machine.machine_owner_id || '',
       machineType: machine.machine_type || '',
       machineNumber: machine.machine_number || '',
       ratePerHour: machine.owner_rate_per_hour || '',
+      discountHours: hours.toString(),
+      discountMinutes: minutes.toString(),
       driverName: machine.driver_name || '',
       driverPhone: machine.driver_phone || '',
       status: machine.status || 'Active'
@@ -166,6 +214,8 @@ const Machines = () => {
       machineType: '',
       machineNumber: '',
       ratePerHour: '',
+      discountHours: '',
+      discountMinutes: '',
       driverName: '',
       driverPhone: '',
       status: 'Active'
@@ -203,16 +253,6 @@ const Machines = () => {
       }
     }
   };
-
-  useEffect(() => {
-    const savedTypes = localStorage.getItem('machineTypes');
-    if (savedTypes) {
-      setMachineTypes(JSON.parse(savedTypes));
-    }
-  }, []);
-
-  // Wait for all data to load before rendering
-  // const isDataReady = !loading && machines.length > 0;
 
   // Apply filters
   const filteredMachines = machines.filter(machine => {
@@ -529,24 +569,23 @@ const Machines = () => {
                           <FaTractor style={{ fontSize: '20px', color: '#667eea' }} />
                           <div>
                             <div style={{ fontSize: '16px', fontWeight: '600', color: '#e2e8f0' }}>
-                              {machine.machine_type} - {machine.machine_number}
+                              {machine.machine_owners?.name || 'N/A'}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <FaUserTie style={{ fontSize: '10px' }} />
-                              Owner: {machine.machine_owners?.name || 'N/A'}
+                            <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '2px' }}>
+                              Driver: {machine.driver_name || 'N/A'}
+                              {machine.driver_phone && (
+                                <span style={{ marginLeft: '8px' }}>
+                                  <FaPhone style={{ fontSize: '10px', marginRight: '4px' }} />
+                                  <a href={`tel:${machine.driver_phone}`} style={{ color: '#60a5fa', textDecoration: 'none' }}>
+                                    {machine.driver_phone}
+                                  </a>
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
-                        <div style={{ fontSize: '13px', color: '#cbd5e1', marginLeft: '30px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div>Driver: {machine.driver_name || 'N/A'}</div>
-                          {machine.driver_phone && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <FaPhone style={{ fontSize: '10px' }} />
-                              <a href={`tel:${machine.driver_phone}`} style={{ color: '#60a5fa', textDecoration: 'none' }}>
-                                {machine.driver_phone}
-                              </a>
-                            </div>
-                          )}
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '30px' }}>
+                          {machine.machine_type} - {machine.machine_number}
                         </div>
                       </div>
                       <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'right' }}>
@@ -764,6 +803,49 @@ const Machines = () => {
                     </small>
                   </div>
                 </div>
+                
+                <div className="form-section-header">
+                  <h3>Owner Discount (Cumulative for this Machine)</h3>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Discount Hours 🕒</label>
+                    <input
+                      type="number"
+                      value={formData.discountHours || ''}
+                      onChange={(e) => setFormData({ ...formData, discountHours: e.target.value })}
+                      min="0"
+                      step="1"
+                      placeholder="Hours (e.g., 2)"
+                    />
+                    <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      💡 Total hours (whole number)
+                    </small>
+                  </div>
+                  <div className="form-group">
+                    <label>Discount Minutes ⏱️</label>
+                    <input
+                      type="number"
+                      value={formData.discountMinutes || ''}
+                      onChange={(e) => setFormData({ ...formData, discountMinutes: e.target.value })}
+                      min="0"
+                      max="59"
+                      step="1"
+                      placeholder="Minutes (e.g., 15)"
+                    />
+                    <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      💡 Minutes (0-59)
+                    </small>
+                  </div>
+                </div>
+                {(formData.discountHours || formData.discountMinutes) && (
+                  <div style={{ padding: '12px', backgroundColor: '#fef3c7', borderRadius: '8px', marginBottom: '16px', border: '2px solid #f59e0b' }}>
+                    <div style={{ fontWeight: 'bold', color: '#78350f', fontSize: '16px', textAlign: 'center' }}>
+                      Total Discount: {formData.discountHours || 0}h {formData.discountMinutes || 0}m 
+                      ({((parseFloat(formData.discountHours) || 0) + (parseFloat(formData.discountMinutes) || 0) / 60).toFixed(2)} hours)
+                    </div>
+                  </div>
+                )}
                 <div className="form-section-header">
                   <h3>Driver Details</h3>
                 </div>

@@ -86,37 +86,30 @@ router.get('/:id', auth, async (req, res) => {
 // Create job
 router.post('/', auth, async (req, res) => {
   try {
-    const { farmer, machine, workDate, hours, ratePerHour, advanceFromFarmer, expensesGiven, totalAmount, status, notes, discountFromOwner, discountToFarmer } = req.body;
+    const { farmer, machine, workDate, hours, ratePerHour, advanceFromFarmer, expensesGiven, totalAmount, status, notes, discountAmountToFarmer } = req.body;
 
     const calculatedTotal = totalAmount || (parseFloat(hours) * parseFloat(ratePerHour));
     const advance = parseFloat(advanceFromFarmer) || 0;
     const expenses = parseFloat(expensesGiven) || 0;
-    const ownerDiscount = parseFloat(discountFromOwner) || 0;
-    const farmerDiscount = parseFloat(discountToFarmer) || 0;
+    const discountAmount = parseFloat(discountAmountToFarmer) || 0;
 
     console.log('Creating job with total:', calculatedTotal);
+    console.log('Discount amount to farmer:', discountAmount);
 
     // Get machine data first to calculate owner amount
+    // Owner discount is at MACHINE level (cumulative across all jobs)
     const { data: machineData, error: machineError } = await supabase
       .from('machines')
-      .select('total_amount_pending, machine_owner_id, owner_rate_per_hour')
+      .select('total_amount_pending, machine_owner_id, owner_rate_per_hour, discount_hours')
       .eq('id', machine)
       .single();
     
     if (machineError) throw machineError;
 
     // Calculate owner amount using machine's owner_rate_per_hour
-    const grossOwnerAmount = parseFloat(hours) * parseFloat(machineData.owner_rate_per_hour || 0);
-    const netOwnerAmount = grossOwnerAmount - ownerDiscount;
-    const netFarmerAmount = calculatedTotal - farmerDiscount;
-
-    // Validate discounts
-    if (ownerDiscount < 0 || ownerDiscount > grossOwnerAmount) {
-      return res.status(400).json({ error: 'Owner discount must be between 0 and gross owner amount' });
-    }
-    if (farmerDiscount < 0 || farmerDiscount > calculatedTotal) {
-      return res.status(400).json({ error: 'Farmer discount must be between 0 and total amount' });
-    }
+    // Owner discount hours are cumulative at machine level, don't deduct per job
+    const ownerRatePerHour = parseFloat(machineData.owner_rate_per_hour || 0);
+    const ownerAmount = parseFloat(hours) * ownerRatePerHour;
 
     // Insert job
     const { data: job, error: jobError } = await supabase
@@ -130,10 +123,7 @@ router.post('/', auth, async (req, res) => {
         total_amount: calculatedTotal,
         advance_from_farmer: advance,
         expenses_given: expenses,
-        discount_from_owner: ownerDiscount,
-        discount_to_farmer: farmerDiscount,
-        net_amount_to_owner: netOwnerAmount,
-        net_amount_from_farmer: netFarmerAmount,
+        discount_amount_to_farmer: discountAmount,
         acres: 0, // Default value since we use hours now
         status: status || 'Completed',
         notes: notes
@@ -143,11 +133,10 @@ router.post('/', auth, async (req, res) => {
 
     if (jobError) throw jobError;
 
-    // Update machine pending amount (using net amount after discount)
-    
+    // Update machine pending amount
     if (machineData) {
-      const newMachinePending = (machineData.total_amount_pending || 0) + netOwnerAmount;
-      console.log('Updating machine pending with net amount:', machineData.total_amount_pending, '->', newMachinePending, '(gross:', grossOwnerAmount, '- discount:', ownerDiscount, ')');
+      const newMachinePending = (machineData.total_amount_pending || 0) + ownerAmount;
+      console.log('Updating machine pending:', machineData.total_amount_pending, '->', newMachinePending);
       
       await supabase
         .from('machines')
@@ -162,8 +151,8 @@ router.post('/', auth, async (req, res) => {
         .single();
       
       if (ownerData) {
-        const newOwnerPending = (ownerData.total_amount_pending || 0) + netOwnerAmount;
-        console.log('Updating owner pending with net amount:', ownerData.total_amount_pending, '->', newOwnerPending);
+        const newOwnerPending = (ownerData.total_amount_pending || 0) + ownerAmount;
+        console.log('Updating owner pending:', ownerData.total_amount_pending, '->', newOwnerPending);
         
         await supabase
           .from('machine_owners')
@@ -172,7 +161,7 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // Update farmer pending amount (using net amount after discount)
+    // Update farmer pending amount (total minus farmer discount)
     const { data: farmerData } = await supabase
       .from('farmers')
       .select('total_amount_pending')
@@ -180,8 +169,9 @@ router.post('/', auth, async (req, res) => {
       .single();
     
     if (farmerData) {
-      const newFarmerPending = (farmerData.total_amount_pending || 0) + netFarmerAmount;
-      console.log('Updating farmer pending with net amount:', farmerData.total_amount_pending, '->', newFarmerPending, '(gross:', calculatedTotal, '- discount:', farmerDiscount, ')');
+      const farmerOwesAmount = calculatedTotal - discountAmount;
+      const newFarmerPending = (farmerData.total_amount_pending || 0) + farmerOwesAmount;
+      console.log('Updating farmer pending (after discount):', farmerData.total_amount_pending, '->', newFarmerPending);
       
       await supabase
         .from('farmers')
@@ -210,7 +200,7 @@ router.post('/', auth, async (req, res) => {
 // Update job
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { farmer, machine, workDate, hours, ratePerHour, advanceFromFarmer, status, notes } = req.body;
+    const { farmer, machine, workDate, hours, ratePerHour, advanceFromFarmer, status, notes, discountAmountToFarmer } = req.body;
     
     const updateData = {
       ...(farmer && { farmer_id: farmer }),
@@ -219,6 +209,7 @@ router.put('/:id', auth, async (req, res) => {
       ...(hours !== undefined && { hours: parseFloat(hours) }),
       ...(ratePerHour !== undefined && { rate_per_hour: parseFloat(ratePerHour) }),
       ...(advanceFromFarmer !== undefined && { advance_from_farmer: parseFloat(advanceFromFarmer) || 0 }),
+      ...(discountAmountToFarmer !== undefined && { discount_amount_to_farmer: parseFloat(discountAmountToFarmer) || 0 }),
       ...(status && { status }),
       ...(notes !== undefined && { notes: notes || null })
     };
@@ -227,12 +218,12 @@ router.put('/:id', auth, async (req, res) => {
       .from('harvesting_jobs')
       .update(updateData)
       .eq('id', req.params.id)
-      .select('*')
-      .single();
+      .select('*');
     
     if (error) throw error;
     
-    res.json(job);
+    // Return first item if array, otherwise return the data
+    res.json(Array.isArray(job) ? job[0] : job);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
