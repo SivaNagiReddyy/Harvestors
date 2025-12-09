@@ -535,11 +535,10 @@ const Machines = () => {
                 console.log(`Machine ${machine.machine_number} - Balance:`, netPayable);
                 
                 // ============================================
-                // DISCOUNTS GIVEN BY OWNER
+                // DISCOUNT HOURS GIVEN BY OWNER
                 // ============================================
-                const totalDiscountsGiven = jobs
-                  .filter(job => job.machine_id === machine.id)
-                  .reduce((sum, job) => sum + parseFloat(job.discount_from_owner || 0), 0);
+                const discountHours = parseFloat(machine.discount_hours || 0);
+                const discountHoursDisplay = discountHours > 0 ? `${Math.floor(discountHours)}h ${Math.round((discountHours - Math.floor(discountHours)) * 60)}m` : '0h 0m';
                 
                 return (
                   <div
@@ -630,9 +629,9 @@ const Machines = () => {
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Discounts</div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: totalDiscountsGiven > 0 ? '#ef4444' : '#6b7280' }}>
-                          ₹{totalDiscountsGiven.toLocaleString()}
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Discount Hours</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: discountHours > 0 ? '#fbbf24' : '#6b7280' }}>
+                          {discountHoursDisplay}
                         </div>
                       </div>
                     </div>
