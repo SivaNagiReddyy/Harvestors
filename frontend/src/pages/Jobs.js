@@ -929,7 +929,7 @@ const Jobs = () => {
                       onChange={(e) => setFormData({ ...formData, discountAmountToFarmer: e.target.value })}
                       placeholder="Money discount to this farmer"
                       min="0"
-                      step="100"
+                      step="1"
                       style={{ borderColor: '#f59e0b', borderWidth: '2px' }}
                     />
                     <small style={{ color: '#92400e', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '500' }}>
