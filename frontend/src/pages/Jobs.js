@@ -483,7 +483,8 @@ const Jobs = () => {
             filteredJobs.map((job) => {
               const totalAmount = (job.hours || 0) * (job.rate_per_hour || 0);
               const advanceFromFarmer = job.advance_from_farmer || 0;
-              const netAmount = totalAmount - advanceFromFarmer;
+              const discountToFarmer = job.discount_amount_to_farmer || 0;
+              const netAmount = totalAmount - advanceFromFarmer - discountToFarmer;
               
               // Get status color
               const getStatusStyle = (status) => {
@@ -569,7 +570,7 @@ const Jobs = () => {
                     </div>
                   </div>
 
-                  {/* Financial grid - 2x2 layout */}
+                  {/* Financial grid - 2x3 layout */}
                   <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr', 
@@ -601,6 +602,18 @@ const Jobs = () => {
                       <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '2px' }}>Total</div>
                       <div style={{ fontSize: '14px', fontWeight: '600', color: '#10b981' }}>
                         ₹{totalAmount.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '2px' }}>Advance</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: advanceFromFarmer > 0 ? '#f59e0b' : '#6b7280' }}>
+                        ₹{advanceFromFarmer.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '2px' }}>Discount</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: discountToFarmer > 0 ? '#22c55e' : '#6b7280' }}>
+                        ₹{discountToFarmer.toLocaleString()}
                       </div>
                     </div>
                     <div>
