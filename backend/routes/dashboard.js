@@ -290,10 +290,16 @@ router.get('/stats', auth, async (req, res) => {
     const totalToPayToOwnersWithoutDiscounts = parseFloat((Object.values(ownerEarningsFromJobs).reduce((sum, val) => sum + val, 0)).toFixed(2));
     
     // Now apply machine-level discount hours to reduce owner payment FOR COMBINED VIEW ONLY
-    // Get all machines with their discount hours
+    // Get unique machine IDs from filtered jobs to only count discounts for machines in use
+    const machineIdsInUse = [...new Set(allJobs?.map(job => job.machine_id).filter(Boolean))];
+    
+    // Get machines with their discount hours - only for machines that have jobs in filtered data
     let machinesWithDiscountQuery = supabase.from('machines').select('id, machine_owner_id, owner_rate_per_hour, discount_hours');
-    if (machine_id) {
-      machinesWithDiscountQuery = machinesWithDiscountQuery.eq('id', machine_id);
+    if (machineIdsInUse.length > 0) {
+      machinesWithDiscountQuery = machinesWithDiscountQuery.in('id', machineIdsInUse);
+    } else {
+      // If no jobs, return empty array
+      machinesWithDiscountQuery = machinesWithDiscountQuery.eq('id', '00000000-0000-0000-0000-000000000000');
     }
     const { data: machinesWithDiscount } = await machinesWithDiscountQuery;
     
