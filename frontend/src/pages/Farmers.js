@@ -500,7 +500,7 @@ const Farmers = () => {
                 // Calculate total discounts received by this farmer
                 const totalDiscountsReceived = jobs
                   .filter(job => job.farmer_id === farmer.id)
-                  .reduce((sum, job) => sum + parseFloat(job.discount_to_farmer || 0), 0);
+                  .reduce((sum, job) => sum + parseFloat(job.discount_amount_to_farmer || 0), 0);
                 
                 return (
                   <div 
