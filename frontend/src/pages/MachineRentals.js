@@ -538,7 +538,7 @@ const MachineRentals = () => {
                 }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Charged</div>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#3b82f6' }}>
-                    ₹{((rental.total_amount_charged || 0)/1000).toFixed(1)}k
+                    ₹{(rental.total_amount_charged || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
                 <div style={{ 
@@ -549,7 +549,7 @@ const MachineRentals = () => {
                 }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Profit</div>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#10b981' }}>
-                    ₹{((rental.profit_margin || 0)/1000).toFixed(1)}k
+                    ₹{(rental.profit_margin || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>

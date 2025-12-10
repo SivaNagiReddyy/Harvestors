@@ -459,7 +459,6 @@ const Dashboard = () => {
                 <div className={`card-amount ${(stats?.combined?.profit || 0) >= 0 ? 'profit' : 'negative'}`}>
                   ₹{formatIndianCurrency(Math.round((stats?.combined?.profit || 0) * 100) / 100)}
                 </div>
-                <p className="card-description">Revenue - (hours × owner_rate)</p>
                 <div className="card-footer">
                   <span className="card-badge info">Net Profit</span>
                 </div>
@@ -472,7 +471,6 @@ const Dashboard = () => {
                   <h4>Total Hours</h4>
                 </div>
                 <div className="card-amount" style={{ color: '#667eea' }}>{formatHoursToHHMM(stats?.combined?.totalHours || 0)}</div>
-                <p className="card-description">SUM(hours worked)</p>
                 <div className="card-footer">
                   <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Work Time</span>
                 </div>
@@ -485,7 +483,6 @@ const Dashboard = () => {
                   <h4>Expenses</h4>
                 </div>
                 <div className="card-amount" style={{ color: '#f59e0b' }}>₹{formatIndianCurrency(Math.round((stats?.combined?.expenses || 0) * 100) / 100)}</div>
-                <p className="card-description">SUM(machine expenses)</p>
                 <div className="card-footer">
                   <span className="card-badge" style={{ background: '#fef3c7', color: '#92400e' }}>Total Cost</span>
                 </div>
@@ -601,7 +598,6 @@ const Dashboard = () => {
                 <div className={`card-amount ${(stats?.harvesting?.profit || 0) >= 0 ? 'profit' : 'negative'}`}>
                   ₹{formatIndianCurrency(Math.round((stats?.harvesting?.profit || 0) * 100) / 100)}
                 </div>
-                <p className="card-description">Revenue - (hours × owner_rate)</p>
                 <div className="card-footer">
                   <span className="card-badge info">Net Profit</span>
                 </div>
@@ -614,7 +610,6 @@ const Dashboard = () => {
                   <h4>Total Hours</h4>
                 </div>
                 <div className="card-amount" style={{ color: '#667eea' }}>{formatHoursToHHMM(stats?.harvesting?.totalHours || 0)}</div>
-                <p className="card-description">SUM(hours worked)</p>
                 <div className="card-footer">
                   <span className="card-badge" style={{ background: '#eef2ff', color: '#667eea' }}>Work Time</span>
                 </div>
@@ -627,7 +622,6 @@ const Dashboard = () => {
                   <h4>Expenses</h4>
                 </div>
                 <div className="card-amount" style={{ color: '#f59e0b' }}>₹{formatIndianCurrency(Math.round((stats?.harvesting?.expenses || 0) * 100) / 100)}</div>
-                <p className="card-description">SUM(machine expenses)</p>
                 <div className="card-footer">
                   <span className="card-badge" style={{ background: '#fef3c7', color: '#92400e' }}>Total Cost</span>
                 </div>

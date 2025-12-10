@@ -634,6 +634,17 @@ const Machines = () => {
                           {discountHoursDisplay}
                         </div>
                       </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '2px' }}>Total Hours</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#667eea' }}>
+                          {(() => {
+                            const totalHours = jobs.filter(job => job.machine_id === machine.id).reduce((sum, job) => sum + parseFloat(job.hours || 0), 0) + rentals.filter(rental => rental.machine_id === machine.id).reduce((sum, rental) => sum + parseFloat(rental.rental_hours || 0), 0);
+                            const hours = Math.floor(totalHours);
+                            const minutes = Math.round((totalHours - hours) * 60);
+                            return `${hours}h ${minutes}m`;
+                          })()}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Action Buttons */}
